@@ -2,6 +2,7 @@ import sys
 
 from path_helpers import path
 try:
+    import gtk
     import pygtkhelpers.ui.dialogs as gd
 except ImportError:
     GUI_AVAILABLE = False
@@ -41,10 +42,6 @@ def parse_args(args=None):
     if args is None:
         args = sys.argv
 
-    # TODO Set default output directory based on operating system.
-    #  - e.g., Use `Documents/MicrodropEnvs` on Windows.
-    default_output_dir = path('~').expand()
-
     parser = ArgumentParser(description='Create portable MicroDrop settings '
                             'directory.')
     parser.add_argument('-g', '--gui', action='store_true', help='Use dialog '
@@ -53,8 +50,6 @@ def parse_args(args=None):
                         help='Overwrite existing files in output directory.')
     parser.add_argument('output_dir', type=path, nargs='?',
                         help='Output directory.')
-                        #' (default="%(default)s").',
-                        #default=default_output_dir)
 
     args = parser.parse_args()
 
@@ -72,8 +67,14 @@ def parse_args(args=None):
         folder = gd.select_folder(folder=args.output_dir)
         if folder is None:
             parser.error('Folder selection cancelled.')
+        folder = path(folder)
+        if not args.force_overwrite and folder.isdir() and folder.listdir():
+            response = gd.yesno('Output directory already exists and is not '
+                                'empty.\n\nOverwrite?')
+            if response == gtk.RESPONSE_YES:
+                args.force_overwrite = True
 
-        args.output_dir = path(folder)
+        args.output_dir = folder
     elif args.output_dir is None:
         parser.error('No output directory specified.')
 

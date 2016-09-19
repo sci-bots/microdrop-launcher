@@ -47,7 +47,8 @@ def parse_args(args=None):
             raise SystemExit(-1)
 
         # Display GTK dialog to select output directory.
-        folder = gd.select_folder(folder=args.output_dir)
+        folder = gd.select_folder(folder=args.output_dir, title='Select '
+                                  'MicroDrop configuration output folder')
         if folder is None:
             parser.error('Folder selection cancelled.')
         folder = path(folder)

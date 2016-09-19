@@ -1,6 +1,7 @@
 from datetime import datetime
 import copy
 import os
+import pkg_resources
 import sys
 import tempfile
 import types
@@ -219,6 +220,15 @@ def create_config_directory(output_dir, overwrite=False):
                                        py_exe=py_exe,
                                        config_path=config_path.abspath())
         output.write(launcher_str)
+    release_version_path = output_dir.joinpath('RELEASE-VERSION')
+    with release_version_path.open('w') as output:
+        try:
+            microdrop_dist = pkg_resources.get_distribution('microdrop')
+        except Exception, exception:
+            print >> sys.stderr, ('[warning] could not find microdrop '
+                                  'distribution.')
+        else:
+            output.write(microdrop_dist.version)
 
     return launcher_path
 

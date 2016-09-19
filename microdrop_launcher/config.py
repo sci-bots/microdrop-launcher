@@ -208,14 +208,14 @@ def create_config_directory(output_dir, overwrite=False):
         raise IOError('Output directory exists and is not empty.')
 
     config_path = output_dir.joinpath('microdrop.ini')
-    with config_path.open('wb') as output:
+    with config_path.open('w') as output:
         template = jinja2.Template(config_template)
         config_str = template.render(output_dir=output_dir.name)
         output.write(config_str)
 
     py_exe = path(sys.executable).abspath()
     launcher_path = output_dir.joinpath('microdrop.bat').abspath()
-    with launcher_path.open('wb') as output:
+    with launcher_path.open('w') as output:
         template = jinja2.Template(launcher_template)
         launcher_str = template.render(working_dir=output_dir.abspath(),
                                        py_exe=py_exe,

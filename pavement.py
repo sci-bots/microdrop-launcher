@@ -20,7 +20,10 @@ setup(name='microdrop-launcher',
       install_requires=['jinja2', 'microdrop-plugin-manager>=0.3.post4',
                         'path_helpers'],
       # Install data listed in `MANIFEST.in`
-      include_package_data=True)
+      include_package_data=True,
+      entry_points = {'console_scripts':
+                      ['launch-microdrop = '
+                       'microdrop_launcher.bin.launch:main']})
 
 
 @task

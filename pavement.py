@@ -10,20 +10,20 @@ import version
 
 setup(name='microdrop-launcher',
       version=version.getVersion(),
-      description='Add description here.',
+      description='MicroDrop launcher',
       keywords='',
-      author='Anonymous',
-      author_email='you@mail.com',
+      author='Christian Fobel',
+      author_email='christian@fobel.net',
       url='https://github.com/wheeler-microfluidics/microdrop-launcher',
       license='GPL',
-      packages=['microdrop_launcher', ],
-      install_requires=[],
+      packages=['microdrop_launcher'],
+      install_requires=['jinja2', 'path_helpers'],
       # Install data listed in `MANIFEST.in`
       include_package_data=True)
 
 
 @task
-@needs('generate_setup', 'minilib', 'setuptools.command.sdist') 
+@needs('generate_setup', 'minilib', 'setuptools.command.sdist')
 def sdist():
     """Overrides sdist to make sure that our setup.py is generated."""
     pass

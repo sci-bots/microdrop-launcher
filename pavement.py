@@ -17,7 +17,8 @@ setup(name='microdrop-launcher',
       url='https://github.com/wheeler-microfluidics/microdrop-launcher',
       license='GPL',
       packages=['microdrop_launcher'],
-      install_requires=['jinja2', 'path_helpers'],
+      install_requires=['jinja2', 'microdrop-plugin-manager>=0.3.post4',
+                        'path_helpers'],
       # Install data listed in `MANIFEST.in`
       include_package_data=True)
 

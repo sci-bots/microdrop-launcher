@@ -15,7 +15,7 @@ except ImportError:
 else:
     GUI_AVAILABLE = True
 
-from .. import create_config_directory
+from ..config import create_config_directory
 
 
 def parse_args(args=None):

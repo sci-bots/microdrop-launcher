@@ -73,6 +73,8 @@ if __name__ == '__main__':
     except IOError, exception:
         print >> sys.stderr, exception
     else:
+        launcher_path.parent.joinpath('devices').makedirs_p()
+        launcher_path.parent.joinpath('plugins').makedirs_p()
         message = ('Start MicroDrop with the following:\n\n    {}'
                    .format('"{}"'.format(launcher_path) if ' ' in launcher_path
                            else launcher_path))

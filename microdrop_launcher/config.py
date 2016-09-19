@@ -38,21 +38,24 @@ def directory_multi_keys(root, parent_keys=None):
     Collect all items in nested key-value mapping that satisfy one of the
     following:
 
-     - End with `"_dir"`.
-     - Contain `"directory"`.
+     - End with ``"_dir"``.
+     - Contain ``"directory"``.
 
-    Args
-    ----
-
-        root (dict-like) : Nested key-value mapping.
-        parent_keys (list) : Keys of parents of `root` in hierarchy.
+    Parameters
+    ----------
+    root : dict-like
+        Nested key-value mapping.
+    parent_keys : list
+        Keys of parents of ``root`` in hierarchy.
 
     Returns
     -------
+    list
+        List of tuples.
 
-        (list) : List of tuples.  Within each tuple, first element is a tuple
-            of keys (one key per hierarchy level) and the second element is the
-            corresponding item value.
+        Within each tuple, first element is a tuple of keys (one key per
+        hierarchy level) and the second element is the corresponding item
+        value.
     '''
     if parent_keys is None:
         parent_keys = []
@@ -72,18 +75,18 @@ def directory_multi_keys(root, parent_keys=None):
 
 def config_relative_paths_to(config, root):
     '''
-    Args
-    ----
-
-        config (configobj.ConfigObj) : Configuration.
-        root (str) : Root directory to resolve configuration paths against.
+    Parameters
+    ----------
+    config : configobj.ConfigObj
+        Configuration.
+    root : str
+        Root directory to resolve configuration paths against.
 
     Returns
     -------
-
-        (configobj.ConfigObj) : Copy of input configuration with descendent
-            paths of `root` directory replaced with *relative* paths (with
-            respect to `root`).
+    configobj.ConfigObj
+        Copy of input configuration with descendent paths of ``root`` directory
+        replaced with *relative* paths (with respect to ``root``).
     '''
     # Wrap `root` in `path` wrapper for convenience methods.
     root = path(root)
@@ -117,11 +120,21 @@ def config_relative_paths_to(config, root):
 def create_config_directory_with_paths(output_directory, paths_ini_path=None,
                                        overwrite=False):
     '''
-    Args
-    ----
+    Parameters
+    ----------
+    output_dir : str
+        Path to output directory.
+    paths_ini_path : str
+        Path to existing ``microdrop.ini`` file to extract directory paths
+        from.
+    overwrite : bool
+        If ``False``, do not write to output directory if it already exists and
+        is not empty.
 
-        paths_config_path (str) : Path to existing `microdrop.ini` file to
-            extract directory paths from.
+    Returns
+    -------
+    path_helpers.path
+        Path to launcher script (i.e., ``microdrop.bat``).
     '''
     # Replace descendent directory paths in existing configuration file with
     # for new configuration directory.
@@ -172,17 +185,18 @@ def create_config_directory(output_dir, overwrite=False):
     also created in the directory to launch Microdrop using the configuration.
     Note that the `microdrop.bat` can be launched within any working directory.
 
-    Args
-    ----
-
-        output_dir (str) : Path to output directory.
-        overwrite (bool) : If `False`, do not write to output directory if it
-            already exists and is not empty.
+    Parameters
+    ----------
+    output_dir : str
+        Path to output directory.
+    overwrite : bool
+        If ``False``, do not write to output directory if it already exists and
+        is not empty.
 
     Returns
     -------
-
-        (str) : Path to launcher script (i.e., `microdrop.bat`).
+    path_helpers.path
+        Path to launcher script (i.e., ``microdrop.bat``).
     '''
     output_dir = path(output_dir)
 
@@ -219,20 +233,21 @@ def replace_config_directory(config_directory, backup=True):
     replaced by corresponding relative paths in new configuration (with respect
     to new directory).
 
-    Args
-    ----
-
-        config_directory (str) : Path to existing Microdrop configuration
-            directory.
-        backup (True) : If `True`, existing directory will be renamed with
-            timestamp suffix.  Otherwise, the existing directory will be
-            **deleted**.
+    Parameters
+    ----------
+    config_directory : str
+        Path to existing Microdrop configuration directory.
+    backup : True
+        If ``True``, existing directory will be renamed with timestamp suffix.
+        Otherwise, the existing directory will be **deleted**.
 
     Returns
     -------
+    None or path_helpers.path
+        If :data:`backup` is ``True``, the backed up directory path is
+        returned.
 
-        (None or path) : If `backup==True`, the backed up directory path is
-            returned. Otherwise, `None` is returned.
+        Otherwise, ``None`` is returned.
     '''
     config_directory = path(config_directory)
     assert(config_directory.isdir())

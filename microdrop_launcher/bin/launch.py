@@ -50,9 +50,14 @@ def main(args=None):
         args = parse_args()
     args = mpm.bin.validate_args(args)
     logger.debug('Arguments: %s', args)
+
     if args.install_plugin_requirements:
         sp.call([sys.executable, '-m', 'mpm', '-d', args.plugins_directory,
                  'hook', 'on_install'])
+
+    if args.config_file is None:
+        args.config_file = (args.plugins_directory.parent
+                            .joinpath('microdrop.ini'))
 
     release_version_path = args.config_file.parent.joinpath('RELEASE-VERSION')
     installed_version_str = pkg_resources.get_distribution('microdrop').version

@@ -75,6 +75,7 @@ def main(args=None):
         logger.error('Configuration directory major version (%s) does not '
                      'match installed major MicroDrop version (%s)',
                      release_version, installed_version)
+        print 'Press <enter> to continue...', raw_input()
         raise SystemExit(-1)
     else:
         original_directory = ph.path(os.getcwd())

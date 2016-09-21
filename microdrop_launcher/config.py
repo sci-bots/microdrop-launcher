@@ -7,8 +7,8 @@ import tempfile
 import types
 
 from configobj import ConfigObj
-from path_helpers import path
 import jinja2
+import path_helpers as ph
 
 
 # Batch file template.
@@ -71,7 +71,7 @@ def directory_multi_keys(root, parent_keys=None):
         elif isinstance(v, types.StringTypes) and any([k.endswith('_dir'),
                                                        'directory' in k]):
             # Item is a directory path
-            multi_keys.append((tuple(parent_keys + [k]), path(v)))
+            multi_keys.append((tuple(parent_keys + [k]), ph.path(v)))
     return multi_keys
 
 
@@ -91,7 +91,7 @@ def config_relative_paths_to(config, root):
         replaced with *relative* paths (with respect to ``root``).
     '''
     # Wrap `root` in `path` wrapper for convenience methods.
-    root = path(root)
+    root = ph.path(root)
     # Copy input config, since we are modifying it.
     config_i = copy.deepcopy(config)
 
@@ -122,6 +122,13 @@ def config_relative_paths_to(config, root):
 def create_config_directory_with_paths(output_directory, paths_ini_path=None,
                                        overwrite=False):
     '''
+    Create new configuration directory, where configuration file contains
+    relative paths with respect to new directory.
+
+    If :data:`paths_ini_path` is specified, replace descendent directory paths
+    in :data:`paths_ini_path` with relative paths with respect to output
+    directory.
+
     Parameters
     ----------
     output_dir : str
@@ -138,9 +145,7 @@ def create_config_directory_with_paths(output_directory, paths_ini_path=None,
     path_helpers.path
         Path to launcher script (i.e., ``microdrop.bat``).
     '''
-    # Replace descendent directory paths in existing configuration file with
-    # for new configuration directory.
-    paths_ini_path = path(paths_ini_path)
+    paths_ini_path = ph.path(paths_ini_path)
     if paths_ini_path.isfile():
         # Load existing configuration file.
         paths_config = ConfigObj(paths_ini_path)
@@ -185,7 +190,7 @@ def create_config_directory(output_dir, overwrite=False):
     The created configuration causes Microdrop to store plugins and device
     files within the configuration directory.  A batch file `microdrop.bat` is
     also created in the directory to launch Microdrop using the configuration.
-    Note that the `microdrop.bat` can be launched within any working directory.
+    Note that the ``microdrop.bat`` can be launched within any working directory.
 
     Parameters
     ----------
@@ -200,7 +205,7 @@ def create_config_directory(output_dir, overwrite=False):
     path_helpers.path
         Path to launcher script (i.e., ``microdrop.bat``).
     '''
-    output_dir = path(output_dir)
+    output_dir = ph.path(output_dir)
 
     if not output_dir.isdir():
         output_dir.makedirs_p()
@@ -213,7 +218,7 @@ def create_config_directory(output_dir, overwrite=False):
         config_str = template.render(output_dir=output_dir.name)
         output.write(config_str)
 
-    py_exe = path(sys.executable).abspath()
+    py_exe = ph.path(sys.executable).abspath()
     launcher_path = output_dir.joinpath('microdrop.bat').abspath()
     with launcher_path.open('w') as output:
         template = jinja2.Template(launcher_template)
@@ -221,11 +226,18 @@ def create_config_directory(output_dir, overwrite=False):
                                        py_exe=py_exe,
                                        config_path=config_path.abspath())
         output.write(launcher_str)
+
+    # Copy default devices to new profile.
+    if pkg_resources.resource_isdir('microdrop', 'devices'):
+        devices_dir = ph.path(pkg_resources.resource_filename('microdrop',
+                                                              'devices'))
+        devices_dir.copytree(output_dir.joinpath('devices'))
+
     release_version_path = output_dir.joinpath('RELEASE-VERSION')
     with release_version_path.open('w') as output:
         try:
             microdrop_dist = pkg_resources.get_distribution('microdrop')
-        except Exception, exception:
+        except Exception:
             print >> sys.stderr, ('[warning] could not find microdrop '
                                   'distribution.')
         else:
@@ -240,9 +252,11 @@ def replace_config_directory(config_directory, backup=True):
     configuration.
 
     Directory paths from existing configuration will be copied to new
-    configuration. Descendent paths of existing configuration directory will be
-    replaced by corresponding relative paths in new configuration (with respect
-    to new directory).
+    configuration.
+
+    Descendent paths of existing configuration directory will be replaced by
+    corresponding relative paths in new configuration (with respect to new
+    directory).
 
     Parameters
     ----------
@@ -260,15 +274,18 @@ def replace_config_directory(config_directory, backup=True):
 
         Otherwise, ``None`` is returned.
     '''
-    config_directory = path(config_directory)
+    config_directory = ph.path(config_directory)
     assert(config_directory.isdir())
     try:
-        new_config_directory = path(tempfile.mkdtemp(prefix='microdrop_config-'))
+        new_config_directory = ph.path(tempfile
+                                       .mkdtemp(prefix='microdrop_config-'))
 
         config_ini = config_directory.joinpath('microdrop.ini')
-        launcher_path = create_config_directory_with_paths(new_config_directory,
-                                                           paths_ini_path=config_ini
-                                                           if config_ini.isfile() else None)
+        launcher_path = \
+            create_config_directory_with_paths(new_config_directory,
+                                               paths_ini_path=config_ini
+                                               if config_ini.isfile()
+                                               else None)
 
         if backup:
             # Rename existing directory with appended timestamp postfix.

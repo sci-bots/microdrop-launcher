@@ -22,7 +22,9 @@ setup(name='microdrop-launcher',
       # Install data listed in `MANIFEST.in`
       include_package_data=True,
       entry_points = {'console_scripts':
-                      ['launch-microdrop = '
+                      ['microdrop-profile-manager = '
+                       'microdrop_launcher.bin.profile_launcher:main',
+                       'launch-microdrop = '
                        'microdrop_launcher.bin.launch:main']})
 
 

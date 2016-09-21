@@ -304,11 +304,11 @@ class LaunchDialog(object):
         button_import = gtk.Button('Import...')
         button_create = gtk.Button('Create...')
         button_import.connect('clicked', lambda *args:
-                              self.import_profile(self.df_profiles.path
-                                                  .iloc[0]))
+                              self.import_profile(self.df_profiles
+                                                  .path.get(0)))
         button_create.connect('clicked', lambda *args:
                               self.create_profile(self.df_profiles.path
-                                                  .iloc[0]))
+                                                  .get(0)))
         for button_i in (button_import, button_create):
             buttons_box.pack_end(button_i, expand=False, fill=False)
         buttons_area.pack_end(buttons_box, expand=False, fill=False)

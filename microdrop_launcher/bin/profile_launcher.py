@@ -352,6 +352,49 @@ def load_profiles_info(profiles_path):
     return df_profiles
 
 
+def drop_version_errors(df_profiles, missing=False, mismatch=False,
+                        inplace=False):
+    '''
+    Drop rows for profiles with version errors.
+
+    Parameters
+    ----------
+    df_profiles : pandas.DataFrame
+        Table of MicroDrop profile descriptions.
+
+        Must include *at least* the column ``path`` containing the file system
+        path to each profile directory.
+    missing : bool, optional
+        If ``True``, drop rows for profiles where no ``RELEASE-VERSION`` file
+        is found in the profile directory.
+    mismatch : bool, optional
+        If ``True``, drop rows for profiles where major version in
+        ``RELEASE-VERSION`` file and major version of installed MicroDrop
+        package **do not match**.
+    inplace : bool, optional
+        If ``True``, do operation inplace and return None.
+    '''
+    def version_error(profile_path):
+        try:
+            verify_profile_version(profile_path)
+        except RuntimeError:
+            # Major version in `RELEASE-VERSION` file and major version of
+            # installed MicroDrop package **do not match**.
+            return mismatch
+        except IOError:
+            # No `RELEASE-VERSION` file found in the profile directory.
+            return missing
+        else:
+            return False
+
+    error_mask = df_profiles.path.map(version_error)
+    result = df_profiles.drop(error_mask[error_mask].index, inplace=inplace)
+    if inplace:
+        return df_profiles
+    else:
+        return result
+
+
 def profile_major_version(profile):
     release_version_path = ph.path(profile).joinpath('RELEASE-VERSION')
     if release_version_path.isfile():
@@ -402,6 +445,8 @@ def main():
     # If file does not exist or list is empty, the profile list is initialized
     # with the default profile directory path.
     df_profiles = load_profiles_info(args.profiles_path)
+    drop_version_errors(df_profiles, missing=False, mismatch=True,
+                        inplace=True)
 
     # Save most recent list of profiles to disk.
     with args.profiles_path.open('w') as output:

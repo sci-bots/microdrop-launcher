@@ -501,6 +501,9 @@ def parse_args(args=None):
                         default=default_profiles_path)
     parser.add_argument('--default', action='store_true',
                         help='Launch most recently used profile.')
+    parser.add_argument('--no-auto', action='store_true',
+                        help='If not set and there is only a single profile, '
+                        'MicroDrop is launched using the profile.')
 
     args = parser.parse_args()
 
@@ -527,7 +530,8 @@ def main():
     # Look up major version of each profile.
     df_profiles['major_version'] = df_profiles.path.map(profile_major_version)
 
-    if args.default:
+    if args.default or (not args.no_auto and df_profiles.shape[0] == 1):
+        # Launch MicroDrop with most recently used (or only available) profile.
         return_code = launch_profile_row(df_profiles.iloc[0])
         if return_code == 0:
             df_profiles.used_timestamp[0] = str(dt.datetime.now())

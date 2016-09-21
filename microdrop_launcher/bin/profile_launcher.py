@@ -1,4 +1,5 @@
 import datetime as dt
+import functools as ft
 import os
 import pkg_resources
 import re
@@ -65,22 +66,18 @@ def get_profiles_table(df_profiles, launch_callback, remove_callback,
             table.attach(label_ij, left_attach=j, right_attach=j + 1,
                          **row_kwargs)
 
-        def on_launch_clicked(row_i):
-            def _wrapped(*args):
-                launch_callback(row_i)
-            return _wrapped
-
-        def on_remove_clicked(row_i):
-            def _wrapped(*args):
-                remove_callback(row_i)
-            return _wrapped
-
         button_launch_i = gtk.Button('Launch')
+        button_open_i = gtk.Button('Open')
         button_remove_i = gtk.Button('Remove')
-        button_launch_i.connect('clicked', on_launch_clicked(row_i))
-        button_remove_i.connect('clicked', on_remove_clicked(row_i))
-        for button_ij, j in zip((button_launch_i, button_remove_i),
-                                range(j + 1, j + 3)):
+        on_launch_clicked = ft.partial(launch_callback, row_i)
+        on_open_clicked = ft.partial(ph.path(row_i.path).launch)
+        on_remove_clicked = ft.partial(remove_callback, row_i)
+        button_launch_i.connect('clicked', lambda *args: on_launch_clicked())
+        button_open_i.connect('clicked', lambda *args: on_open_clicked())
+        button_remove_i.connect('clicked', lambda *args: on_remove_clicked())
+        # button_remove_i.connect('clicked', lambda
+        for button_ij, j in zip((button_launch_i, button_open_i,
+                                 button_remove_i), range(j + 1, j + 4)):
             table.attach(button_ij, left_attach=j, right_attach=j + 1,
                          **row_kwargs)
 

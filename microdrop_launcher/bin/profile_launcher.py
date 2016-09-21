@@ -462,9 +462,6 @@ def main():
     launch_dialog.run()
     return_code = launch_dialog.return_code
 
-    if return_code is None:
-        return
-
     # Save most recent list of profiles to disk (most recently used first).
     #
     # List can be changed using dialog by:

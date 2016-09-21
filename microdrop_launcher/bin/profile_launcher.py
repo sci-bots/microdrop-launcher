@@ -86,10 +86,13 @@ def get_profiles_table(df_profiles, launch_callback, remove_callback,
 
     scrolled_window = gtk.ScrolledWindow()
     scrolled_window.set_policy(hscrollbar_policy=gtk.POLICY_AUTOMATIC,
-                               vscrollbar_policy=gtk.POLICY_AUTOMATIC)
+                               vscrollbar_policy=gtk.POLICY_ALWAYS)
     scrolled_window.add_with_viewport(table)
+    scrolled_window.props.shadow_type = gtk.SHADOW_NONE
+    scrolled_window.get_child().props.shadow_type = gtk.SHADOW_NONE
     frame = gtk.Frame(label='Select profile to launch')
     frame.add(scrolled_window)
+    # frame.props.shadow_type = gtk.SHADOW_NONE
     frame.show_all()
     return frame
 
@@ -118,7 +121,7 @@ def launch_profile(profile_path):
         # Create a `RELEASE-VERSION` file and populate it with the installed
         # MicroDrop package version.
         response = gd.yesno('Unable to determine compatible MicroDrop version '
-                            'from profile.\nWas this profile created using '
+                            'from profile.\n\nWas this profile created using '
                             'MicroDrop {}?'.format(installed_major_version()))
         if response == gtk.RESPONSE_NO:
             raise RuntimeError('Not launching MicroDrop since profile was not '
@@ -258,13 +261,12 @@ class LaunchDialog(object):
             self.content_area.remove(self.frame)
         self.frame = get_profiles_table(self.df_profiles, on_launch_clicked,
                                         on_remove_clicked)
-        self.content_area.pack_start(self.frame, expand=True, fill=True)
+        self.content_area.pack_start(self.frame, expand=True, fill=True, padding=10)
         self.content_area.reorder_child(self.frame, 0)
 
     def run(self):
         self.dialog = gtk.Dialog()
         self.dialog.set_title('MicroDrop Profile Manager')
-        self.dialog.set_size_request(480, 320)
         self.content_area = self.dialog.get_content_area()
 
         buttons_area = gtk.HBox()
@@ -284,6 +286,11 @@ class LaunchDialog(object):
         self.content_area.pack_end(buttons_area, expand=False, fill=False)
 
         self.update_profiles_frame()
+        self.dialog.show()
+        table = self.frame.get_child().get_child().get_child()
+        x, y, width, height = table.get_allocation()
+        self.dialog.set_size_request(width + 30, 320)
+        self.dialog.props.resizable = False
         self.dialog.run()
 
         return self.profile_row

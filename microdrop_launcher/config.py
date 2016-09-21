@@ -226,6 +226,13 @@ def create_config_directory(output_dir, overwrite=False):
                                        py_exe=py_exe,
                                        config_path=config_path.abspath())
         output.write(launcher_str)
+
+    # Copy default devices to new profile.
+    if pkg_resources.resource_isdir('microdrop', 'devices'):
+        devices_dir = ph.path(pkg_resources.resource_filename('microdrop',
+                                                              'devices'))
+        devices_dir.copytree(output_dir.joinpath('devices'))
+
     release_version_path = output_dir.joinpath('RELEASE-VERSION')
     with release_version_path.open('w') as output:
         try:

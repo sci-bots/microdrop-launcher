@@ -271,6 +271,8 @@ class LaunchDialog(object):
                               'directory</b>.')
             response = dialog.run()
             dialog.destroy()
+            if response not in (RESPONSE_REMOVE, RESPONSE_REMOVE_WITH_DATA):
+                return
             try:
                 if response == RESPONSE_REMOVE_WITH_DATA:
                     response = gd.yesno('Remove profile data (cannot be '

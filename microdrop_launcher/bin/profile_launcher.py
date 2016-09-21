@@ -450,6 +450,8 @@ def parse_args(args=None):
     parser.add_argument('-f', '--profiles-path', type=ph.path,
                         help='Path to profiles list (default=%(default)s)',
                         default=default_profiles_path)
+    parser.add_argument('--default', action='store_true',
+                        help='Launch most recently used profile.')
 
     args = parser.parse_args()
 
@@ -480,10 +482,14 @@ def main():
     # Look up major version of each profile.
     df_profiles['major_version'] = df_profiles.path.map(profile_major_version)
 
-    # Display dialog to manage profiles or launch a profile.
-    launch_dialog = LaunchDialog(df_profiles)
-    launch_dialog.run()
-    return_code = launch_dialog.return_code
+    if args.default:
+        return_code = launch_profile_row(df_profiles.iloc[0])
+    else:
+        # Display dialog to manage profiles or launch a profile.
+        launch_dialog = LaunchDialog(df_profiles)
+        launch_dialog.run()
+        return_code = launch_dialog.return_code
+        df_profiles = launch_dialog.df_profiles
 
     # Save most recent list of profiles to disk (most recently used first).
     #
@@ -491,7 +497,7 @@ def main():
     #  - Creating a new profile.
     #  - Importing a profile.
     #  - Updating used timestamp by launching a profile.
-    df_profiles = launch_dialog.df_profiles.astype(str)
+    df_profiles = df_profiles.astype(str)
     df_profiles.sort_values('used_timestamp', ascending=False, inplace=True)
 
     with args.profiles_path.open('w') as output:

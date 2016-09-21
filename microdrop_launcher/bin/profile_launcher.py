@@ -115,8 +115,8 @@ def launch_profile(profile_path):
         #
         # Notify the user and wait for user input to continue.
         raise RuntimeError('Configuration directory major version (%s) does '
-                           'not match installed major MicroDrop version (%s)',
-                           release_version, installed_version)
+                           'not match installed major MicroDrop version (%s)'
+                           % (release_version, installed_version))
     else:
         # Major version in `RELEASE-VERSION` file and major version of
         # installed MicroDrop package **match**.

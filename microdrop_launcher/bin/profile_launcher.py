@@ -18,13 +18,15 @@ import yaml
 from microdrop_launcher.config import create_config_directory
 
 cre_version = re.compile(r'^(?P<major>\d+)\.')
+
 get_major_version = lambda version: '{}.0'.format(cre_version
                                                   .match(version)
                                                   .group('major'))
 SAVED_COLUMNS = ['used_timestamp', 'path']
 
 
-def get_profiles_table(df_profiles, launch_callback, short_threshold=40):
+def get_profiles_table(df_profiles, launch_callback, remove_callback,
+                       short_threshold=40):
     def short_path(path_i):
         base_i, name_i = ph.path(path_i).splitpath()
 
@@ -33,7 +35,10 @@ def get_profiles_table(df_profiles, launch_callback, short_threshold=40):
         return base_i.joinpath(name_i)
 
     grid_columns = ['path', 'major_version']
-    table = gtk.Table(df_profiles.shape[0] + 1, len(grid_columns) + 1)
+    # One header row plus one row per profile
+    # One column for each column in `grid_columns`, plus two columns for launch
+    # and remove buttons, respectively.
+    table = gtk.Table(df_profiles.shape[0] + 1, len(grid_columns) + 2)
 
     for i, column_i in enumerate(grid_columns):
         label_i = gtk.Label()
@@ -59,16 +64,25 @@ def get_profiles_table(df_profiles, launch_callback, short_threshold=40):
                 label_ij = gtk.Label(row_i[column_ij])
             table.attach(label_ij, left_attach=j, right_attach=j + 1,
                          **row_kwargs)
-        button_i = gtk.Button('Launch')
 
-        def on_clicked(row_i):
-            def _on_clicked(*args):
+        def on_launch_clicked(row_i):
+            def _wrapped(*args):
                 launch_callback(row_i)
-            return _on_clicked
+            return _wrapped
 
-        button_i.connect('clicked', on_clicked(row_i))
-        j += 1
-        table.attach(button_i, left_attach=j, right_attach=j + 1, **row_kwargs)
+        def on_remove_clicked(row_i):
+            def _wrapped(*args):
+                remove_callback(row_i)
+            return _wrapped
+
+        button_launch_i = gtk.Button('Launch')
+        button_remove_i = gtk.Button('Remove')
+        button_launch_i.connect('clicked', on_launch_clicked(row_i))
+        button_remove_i.connect('clicked', on_remove_clicked(row_i))
+        for button_ij, j in zip((button_launch_i, button_remove_i),
+                                range(j + 1, j + 3)):
+            table.attach(button_ij, left_attach=j, right_attach=j + 1,
+                         **row_kwargs)
 
     scrolled_window = gtk.ScrolledWindow()
     scrolled_window.set_policy(hscrollbar_policy=gtk.POLICY_AUTOMATIC,
@@ -210,9 +224,40 @@ class LaunchDialog(object):
                 if return_code == 0:
                     profile_row_i.used_timestamp = str(dt.datetime.now())
 
+        def on_remove_clicked(profile_row_i):
+            dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
+            dialog.set_title('Remove profile')
+            RESPONSE_REMOVE, RESPONSE_REMOVE_WITH_DATA, RESPONSE_CANCEL = \
+                range(3)
+            dialog.add_buttons('_Remove', RESPONSE_REMOVE, 'Remove with _data',
+                               RESPONSE_REMOVE_WITH_DATA, 'Can_cel',
+                               RESPONSE_CANCEL)
+            dialog.set_markup('Remove profile from list?\n\n'
+                              '<b>"Remove with data"</b> removes profile from '
+                              'list <b>and deletes the profile '
+                              'directory</b>.')
+            response = dialog.run()
+            dialog.destroy()
+            try:
+                if response == RESPONSE_REMOVE_WITH_DATA:
+                    response = gd.yesno('Remove profile data (cannot be '
+                                        'undone)?')
+                    if response == gtk.RESPONSE_YES:
+                        ph.path(profile_row_i.path).rmtree()
+                    else:
+                        return
+            except Exception, exception:
+                gd.error(str(exception))
+            finally:
+                self.df_profiles = (self.df_profiles
+                                    .loc[self.df_profiles.path !=
+                                         profile_row_i.path].copy())
+            self.update_profiles_frame()
+
         if self.frame is not None:
             self.content_area.remove(self.frame)
-        self.frame = get_profiles_table(self.df_profiles, on_launch_clicked)
+        self.frame = get_profiles_table(self.df_profiles, on_launch_clicked,
+                                        on_remove_clicked)
         self.content_area.pack_start(self.frame, expand=True, fill=True)
         self.content_area.reorder_child(self.frame, 0)
 

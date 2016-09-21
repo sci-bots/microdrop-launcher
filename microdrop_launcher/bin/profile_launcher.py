@@ -97,10 +97,22 @@ def get_profiles_table(df_profiles, launch_callback, remove_callback,
     return frame
 
 
-def launch_profile(profile_path):
+def verify_profile_version(profile_path):
+    '''
+    Parameters
+    ----------
+    profile_path : str
+        Path to profile directory.
+
+    Raises
+    ------
+    IOError
+        If no version file found in profile directory.
+    RuntimeError
+        If profile version does not match installed MicroDrop version.
+    '''
     profile_path = ph.path(profile_path)
 
-    config_file = profile_path.joinpath('microdrop.ini')
     release_version_path = profile_path.joinpath('RELEASE-VERSION')
 
     # Query the currently installed version of the MicroDrop Python package.
@@ -115,22 +127,8 @@ def launch_profile(profile_path):
         release_version_str = release_version_path.lines()[0]
         release_version = pkg_resources.parse_version(release_version_str)
     else:
-        # No `RELEASE-VERSION` file found in the same directory as the
-        # configuration file.
-        #
-        # Create a `RELEASE-VERSION` file and populate it with the installed
-        # MicroDrop package version.
-        response = gd.yesno('Unable to determine compatible MicroDrop version '
-                            'from profile.\n\nWas this profile created using '
-                            'MicroDrop {}?'.format(installed_major_version()))
-        if response == gtk.RESPONSE_NO:
-            raise RuntimeError('Not launching MicroDrop since profile was not '
-                               'created using MicroDrop {}.'
-                               .format(installed_major_version()))
-        with release_version_path.open('w') as output:
-            output.write(installed_version_str)
-        release_version = installed_version
-        release_version_str = installed_version_str
+        # No `RELEASE-VERSION` file found in the profile directory.
+        raise IOError('No version file found in profile directory.')
 
     if not (get_major_version(release_version_str) ==
             get_major_version(installed_version_str)):
@@ -141,33 +139,70 @@ def launch_profile(profile_path):
         raise RuntimeError('Configuration directory major version (%s) does '
                            'not match installed major MicroDrop version (%s)'
                            % (release_version, installed_version))
+
+
+def launch_profile(profile_path):
+    profile_path = ph.path(profile_path)
+    config_file = profile_path.joinpath('microdrop.ini')
+
+    try:
+        verify_profile_version(profile_path)
+    except IOError:
+        # No `RELEASE-VERSION` file found in the profile directory.
+        #
+        # Create a `RELEASE-VERSION` file and populate it with the installed
+        # MicroDrop package version.
+        response = gd.yesno('Unable to determine compatible MicroDrop version '
+                            'from profile.\n\nWas this profile created using '
+                            'the installed version of MicroDrop ({})?'
+                            .format(installed_major_version()))
+        if response == gtk.RESPONSE_NO:
+            raise RuntimeError('Not launching MicroDrop since profile was not '
+                               'created using the installed version of '
+                               'MicroDrop ({})'
+                               .format(installed_major_version()))
+        release_version_path = profile_path.joinpath('RELEASE-VERSION')
+        with release_version_path.open('w') as output:
+            output.write(pkg_resources.get_distribution('microdrop').version)
+
+    # Major version in `RELEASE-VERSION` file and major version of
+    # installed MicroDrop package **match**.
+    original_directory = ph.path(os.getcwd())
+    try:
+        # Change directory into the parent directory of the configuration
+        # file.
+        os.chdir(config_file.parent)
+        return_code = None
+        # Return code of `5` indicates program should be restarted.
+        while return_code is None or return_code == 5:
+            # Launch MicroDrop and save return code.
+            return_code = sp.call([sys.executable, '-m',
+                                    'microdrop.microdrop', '-c',
+                                    config_file])
+    finally:
+        # Restore original working directory.
+        os.chdir(original_directory)
+    return return_code
+
+
+def launch_profile_row(profile_row_i):
+    try:
+        return_code = launch_profile(profile_row_i.path)
+    except Exception, exception:
+        gd.error(str(exception))
     else:
-        # Major version in `RELEASE-VERSION` file and major version of
-        # installed MicroDrop package **match**.
-        original_directory = ph.path(os.getcwd())
-        try:
-            # Change directory into the parent directory of the configuration
-            # file.
-            os.chdir(config_file.parent)
-            return_code = None
-            # Return code of `5` indicates program should be restarted.
-            while return_code is None or return_code == 5:
-                # Launch MicroDrop and save return code.
-                return_code = sp.call([sys.executable, '-m',
-                                       'microdrop.microdrop', '-c',
-                                       config_file])
-        finally:
-            # Restore original working directory.
-            os.chdir(original_directory)
+        if return_code == 0:
+            profile_row_i.used_timestamp = str(dt.datetime.now())
         return return_code
 
 
 class LaunchDialog(object):
     def __init__(self, df_profiles):
         self.df_profiles = df_profiles
+        self.content_area = None
         self.frame = None
         self.profile_row = None
-        self.content_area = None
+        self.return_code = None
 
     def import_profile(self, folder=None):
         # Display GTK dialog to select output directory.
@@ -217,15 +252,10 @@ class LaunchDialog(object):
         def on_launch_clicked(profile_row_i):
             self.dialog.hide()
             self.profile_row = profile_row_i.copy()
-            try:
-                return_code = launch_profile(profile_row_i.path)
-            except Exception, exception:
-                gd.error(str(exception))
+            self.return_code = launch_profile_row(profile_row_i)
+            if self.return_code is None:
                 self.frame = None
                 self.run()
-            else:
-                if return_code == 0:
-                    profile_row_i.used_timestamp = str(dt.datetime.now())
 
         def on_remove_clicked(profile_row_i):
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
@@ -333,22 +363,48 @@ def installed_major_version():
     return get_major_version(installed_version_str)
 
 
-def main():
+def parse_args(args=None):
+    '''Parses arguments, returns (options, args).'''
+    from argparse import ArgumentParser
+
+    if args is None:
+        args = sys.argv
+
     major_version = get_major_version(pkg_resources
                                       .get_distribution('microdrop').version)
     # Look up MicroDrop application directories based on major version.
     microdrop_env_dirs = mdl.dirs.AppDirs('MicroDrop', version=major_version)
     # Construct path to list of profiles based on user configuration directory.
-    profiles_path = microdrop_env_dirs.user_config_dir.joinpath('profiles.yml')
+    default_profiles_path = (microdrop_env_dirs.user_config_dir
+                             .joinpath('profiles.yml'))
+
+    parser = ArgumentParser(description='MicroDrop {} profile manager'
+                            .format(major_version))
+
+    parser.add_argument('-f', '--profiles-path', type=ph.path,
+                        help='Path to profiles list (default=%(default)s)',
+                        default=default_profiles_path)
+
+    args = parser.parse_args()
+
+    if not args.profiles_path.isfile():
+        parser.error('Cannot access profiles path: {}'
+                     .format(args.profiles_path))
+
+    return args
+
+
+def main():
+    args = parse_args()
 
     # Load list of profiles from file.
     #
     # If file does not exist or list is empty, the profile list is initialized
     # with the default profile directory path.
-    df_profiles = load_profiles_info(profiles_path)
+    df_profiles = load_profiles_info(args.profiles_path)
 
     # Save most recent list of profiles to disk.
-    with profiles_path.open('w') as output:
+    with args.profiles_path.open('w') as output:
         profiles_str = yaml.dump(df_profiles[SAVED_COLUMNS].astype(str)
                                  .to_dict('records'), default_flow_style=False)
         output.write(profiles_str)
@@ -359,6 +415,10 @@ def main():
     # Display dialog to manage profiles or launch a profile.
     launch_dialog = LaunchDialog(df_profiles)
     launch_dialog.run()
+    return_code = launch_dialog.return_code
+
+    if return_code is None:
+        return
 
     # Save most recent list of profiles to disk (most recently used first).
     #
@@ -369,11 +429,14 @@ def main():
     df_profiles = launch_dialog.df_profiles.astype(str)
     df_profiles.sort_values('used_timestamp', ascending=False, inplace=True)
 
-    with profiles_path.open('w') as output:
+    with args.profiles_path.open('w') as output:
         profiles_str = yaml.dump(df_profiles[SAVED_COLUMNS]
                                  .to_dict('records'), default_flow_style=False)
         output.write(profiles_str)
 
+    return return_code
+
 
 if __name__ == '__main__':
-    main()
+    return_code = main()
+    raise SystemExit(return_code)

@@ -24,6 +24,7 @@ get_major_version = lambda version: '{}.0'.format(cre_version
                                                   .match(version)
                                                   .group('major'))
 SAVED_COLUMNS = ['used_timestamp', 'path']
+ICON_PATH = pkg_resources.resource_filename('microdrop', 'microdrop.ico')
 
 
 def get_profiles_table(df_profiles, launch_callback, remove_callback,
@@ -146,18 +147,33 @@ def launch_profile(profile_path):
         verify_profile_version(profile_path)
     except IOError:
         # No `RELEASE-VERSION` file found in the profile directory.
-        #
-        # Create a `RELEASE-VERSION` file and populate it with the installed
-        # MicroDrop package version.
-        response = gd.yesno('Unable to determine compatible MicroDrop version '
-                            'from profile.\n\nWas this profile created using '
-                            'the installed version of MicroDrop ({})?'
-                            .format(installed_major_version()))
+
+        # Prompt user to confirm profile version matches installed MicroDrop
+        # version.
+        dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
+        dialog.set_icon_from_file(ICON_PATH)
+        dialog.set_title('Confirm MicroDrop {} profile'
+                         .format(installed_major_version()))
+        dialog.add_buttons(gtk.STOCK_YES, gtk.RESPONSE_YES,
+                           gtk.STOCK_NO, gtk.RESPONSE_NO)
+        dialog.set_markup('Unable to determine compatible MicroDrop version '
+                          'from profile:\n\n    {}\n\n'
+                          'Was this profile created using the installed '
+                          'version of MicroDrop ({})?'
+                          .format(profile_path, installed_major_version()))
+        label = (dialog.get_content_area().get_children()[0].get_children()[-1]
+                 .get_children()[0])
+        label.set_tooltip_text(profile_path)
+        response = dialog.run()
+        dialog.destroy()
         if response == gtk.RESPONSE_NO:
             raise RuntimeError('Not launching MicroDrop since profile was not '
                                'created using the installed version of '
                                'MicroDrop ({})'
                                .format(installed_major_version()))
+
+        # Create a `RELEASE-VERSION` file and populate it with the installed
+        # MicroDrop package version.
         release_version_path = profile_path.joinpath('RELEASE-VERSION')
         with release_version_path.open('w') as output:
             output.write(pkg_resources.get_distribution('microdrop').version)
@@ -186,7 +202,13 @@ def launch_profile_row(profile_row_i):
     try:
         return_code = launch_profile(profile_row_i.path)
     except Exception, exception:
-        gd.error(str(exception))
+        dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                   message_format=str(exception))
+        dialog.set_icon_from_file(ICON_PATH)
+        dialog.set_title('Error launching profile')
+        dialog.add_buttons(gtk.STOCK_OK, gtk.RESPONSE_OK)
+        dialog.run()
+        dialog.destroy()
     else:
         if return_code == 0:
             profile_row_i.used_timestamp = str(dt.datetime.now())
@@ -256,6 +278,7 @@ class LaunchDialog(object):
 
         def on_remove_clicked(profile_row_i):
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
+            dialog.set_icon_from_file(ICON_PATH)
             dialog.set_title('Remove profile')
             RESPONSE_REMOVE, RESPONSE_REMOVE_WITH_DATA, RESPONSE_CANCEL = \
                 range(3)
@@ -295,6 +318,7 @@ class LaunchDialog(object):
 
     def run(self):
         self.dialog = gtk.Dialog()
+        self.dialog.set_icon_from_file(ICON_PATH)
         self.dialog.set_title('MicroDrop Profile Manager')
         self.content_area = self.dialog.get_content_area()
 

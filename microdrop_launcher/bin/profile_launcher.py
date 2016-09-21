@@ -489,10 +489,6 @@ def parse_args(args=None):
 
     args = parser.parse_args()
 
-    if not args.profiles_path.isfile():
-        parser.error('Cannot access profiles path: {}'
-                     .format(args.profiles_path))
-
     return args
 
 

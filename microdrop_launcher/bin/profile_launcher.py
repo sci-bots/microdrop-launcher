@@ -350,6 +350,26 @@ class LaunchDialog(object):
 
 
 def load_profiles_info(profiles_path):
+    '''
+    Load list of profiles from file.
+
+    If file does not exist or list is empty, the profile list is initialized
+    with the default profile directory path (creating a profile at the default
+    location, if it does not already exist).
+
+    Parameters
+    ----------
+    profiles_path : str
+        Path to file containing list of profiles.
+
+    Returns
+    -------
+    df_profiles : pandas.DataFrame
+        Table of MicroDrop profile descriptions including the columns:
+
+         - ``path`` File system path to profile directory.
+         - ``used_timestamp`` Most recent time that profile was launched.
+    '''
     profiles_path = ph.path(profiles_path)
 
     profiles_path.parent.makedirs_p()
@@ -362,12 +382,26 @@ def load_profiles_info(profiles_path):
 
     default_profile_path = mpm.bin.get_plugins_directory().parent
 
+    if not profiles and not default_profile_path.isdir():
+        # No existing profiles.  Create default profile.
+        print 'No existing profiles.  Create default profile at {}.'.format(default_profile_path)
+        create_config_directory(output_dir=default_profile_path)
+
+        for sub_directory_i in ('devices', 'plugins'):
+            default_profile_path.joinpath(sub_directory_i).makedirs_p()
+
+        # Create a `RELEASE-VERSION` file and populate it with the installed
+        # MicroDrop package version.
+        release_version_path = default_profile_path.joinpath('RELEASE-VERSION')
+        with release_version_path.open('w') as output:
+            output.write(pkg_resources.get_distribution('microdrop').version)
+
     if not profiles and default_profile_path.isdir():
         # No profiles list found or empty profiles list.
         #
         # Use default profile path.
         profiles = [{'path': str(default_profile_path),
-                     'used_timestamp': str(dt.datetime.now())}]
+                     'used_timestamp': None}]
 
     df_profiles = pd.DataFrame(profiles, columns=SAVED_COLUMNS)
     df_profiles.sort_values('used_timestamp', ascending=False, inplace=True)

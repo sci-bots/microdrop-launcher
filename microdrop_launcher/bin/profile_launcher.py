@@ -246,7 +246,14 @@ class LaunchDialog(object):
             folder = ph.path(folder).realpath()
 
         if folder.files() or folder.dirs():
-            response = gd.yesno('Directory is not empty.\n\nOverwrite?')
+            dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
+            dialog.set_icon_from_file(ICON_PATH)
+            dialog.set_title('Confirm overwrite')
+            dialog.set_markup('Directory is not empty.\n\nOverwrite?')
+            dialog.add_buttons(gtk.STOCK_YES, gtk.RESPONSE_YES,
+                               gtk.STOCK_NO, gtk.RESPONSE_NO)
+            response = dialog.run()
+            dialog.destroy()
             if response == gtk.RESPONSE_NO:
                 return
         try:
@@ -285,18 +292,26 @@ class LaunchDialog(object):
             dialog.add_buttons('_Remove', RESPONSE_REMOVE, 'Remove with _data',
                                RESPONSE_REMOVE_WITH_DATA, 'Can_cel',
                                RESPONSE_CANCEL)
-            dialog.set_markup('Remove profile from list?\n\n'
+            dialog.set_markup('Remove the following profile from list?\n\n'
+                              '    {}\n\n'
                               '<b>"Remove with data"</b> removes profile from '
                               'list <b>and deletes the profile '
-                              'directory</b>.')
+                              'directory</b>.'.format(profile_row_i.path))
             response = dialog.run()
             dialog.destroy()
             if response not in (RESPONSE_REMOVE, RESPONSE_REMOVE_WITH_DATA):
                 return
             try:
                 if response == RESPONSE_REMOVE_WITH_DATA:
-                    response = gd.yesno('Remove profile data (cannot be '
-                                        'undone)?')
+                    dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
+                    dialog.set_icon_from_file(ICON_PATH)
+                    dialog.set_title('Confirm profile delete')
+                    dialog.set_markup('Remove profile data (cannot be '
+                                      'undone)?')
+                    dialog.add_buttons(gtk.STOCK_YES, gtk.RESPONSE_YES,
+                                       gtk.STOCK_NO, gtk.RESPONSE_NO)
+                    response = dialog.run()
+                    dialog.destroy()
                     if response == gtk.RESPONSE_YES:
                         ph.path(profile_row_i.path).rmtree()
                     else:

@@ -419,6 +419,7 @@ def load_profiles_info(profiles_path):
                      'used_timestamp': None}]
 
     df_profiles = pd.DataFrame(profiles, columns=SAVED_COLUMNS)
+    df_profiles.loc[df_profiles.used_timestamp == 'nan', 'used_timestamp'] = ''
     df_profiles.sort_values('used_timestamp', ascending=False, inplace=True)
     df_profiles.drop_duplicates(subset=['path'], inplace=True)
     return df_profiles
@@ -549,6 +550,7 @@ def main():
     #  - Importing a profile.
     #  - Updating used timestamp by launching a profile.
     df_profiles = df_profiles.astype(str)
+    df_profiles.loc[df_profiles.used_timestamp == 'nan', 'used_timestamp'] = ''
     df_profiles.sort_values('used_timestamp', ascending=False, inplace=True)
 
     with args.profiles_path.open('w') as output:

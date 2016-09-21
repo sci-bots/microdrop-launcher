@@ -210,8 +210,6 @@ def launch_profile_row(profile_row_i):
         dialog.run()
         dialog.destroy()
     else:
-        if return_code == 0:
-            profile_row_i.used_timestamp = str(dt.datetime.now())
         return return_code
 
 
@@ -275,6 +273,8 @@ class LaunchDialog(object):
             if self.return_code is None:
                 self.frame = None
                 self.run()
+            elif self.return_code == 0:
+                profile_row_i.used_timestamp = str(dt.datetime.now())
 
         def on_remove_clicked(profile_row_i):
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
@@ -484,6 +484,8 @@ def main():
 
     if args.default:
         return_code = launch_profile_row(df_profiles.iloc[0])
+        if return_code == 0:
+            df_profiles.used_timestamp[0] = str(dt.datetime.now())
     else:
         # Display dialog to manage profiles or launch a profile.
         launch_dialog = LaunchDialog(df_profiles)

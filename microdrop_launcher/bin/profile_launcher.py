@@ -151,7 +151,11 @@ class LaunchDialog(object):
                                   'profile directory')
         if folder is None:
             return
-        self.df_profiles = self.df_profiles.append({'path': folder},
+
+        major_version = profile_major_version(folder)
+        self.df_profiles = self.df_profiles.append({'path': folder,
+                                                    'major_version':
+                                                    major_version},
                                                    ignore_index=True)
         self.df_profiles.drop_duplicates(subset=['path'], inplace=True)
         self.update_profiles_frame()
@@ -178,7 +182,9 @@ class LaunchDialog(object):
             folder.joinpath('devices').makedirs_p()
             folder.joinpath('plugins').makedirs_p()
 
-        self.df_profiles = self.df_profiles.append({'path': folder},
+        self.df_profiles = self.df_profiles.append({'path': folder,
+                                                    'major_version':
+                                                    installed_major_version()},
                                                    ignore_index=True)
         self.df_profiles.drop_duplicates(subset=['path'], inplace=True)
         self.update_profiles_frame()

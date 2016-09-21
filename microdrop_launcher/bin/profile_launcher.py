@@ -103,6 +103,13 @@ def launch_profile(profile_path):
         #
         # Create a `RELEASE-VERSION` file and populate it with the installed
         # MicroDrop package version.
+        response = gd.yesno('Unable to determine compatible MicroDrop version '
+                            'from profile.\nWas this profile created using '
+                            'MicroDrop {}?'.format(installed_major_version()))
+        if response == gtk.RESPONSE_NO:
+            raise RuntimeError('Not launching MicroDrop since profile was not '
+                               'created using MicroDrop {}.'
+                               .format(installed_major_version()))
         with release_version_path.open('w') as output:
             output.write(installed_version_str)
         release_version = installed_version
@@ -193,9 +200,15 @@ class LaunchDialog(object):
         def on_launch_clicked(profile_row_i):
             self.dialog.hide()
             self.profile_row = profile_row_i.copy()
-            return_code = launch_profile(profile_row_i.path)
-            if return_code == 0:
-                profile_row_i.used_timestamp = str(dt.datetime.now())
+            try:
+                return_code = launch_profile(profile_row_i.path)
+            except Exception, exception:
+                gd.error(str(exception))
+                self.frame = None
+                self.run()
+            else:
+                if return_code == 0:
+                    profile_row_i.used_timestamp = str(dt.datetime.now())
 
         if self.frame is not None:
             self.content_area.remove(self.frame)

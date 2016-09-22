@@ -1,10 +1,13 @@
 import datetime as dt
 import functools as ft
+import logging
 import pkg_resources
 import re
 import sys
 
 import gtk
+import mpm
+import mpm.bin
 import path_helpers as ph
 import pygtkhelpers.ui.dialogs as gd
 import yaml
@@ -267,7 +270,8 @@ def parse_args(args=None):
                              .joinpath('profiles.yml'))
 
     parser = ArgumentParser(description='MicroDrop {} profile manager'
-                            .format(major_version))
+                            .format(major_version),
+                            parents=[mpm.bin.LOG_PARSER])
 
     parser.add_argument('-f', '--profiles-path', type=ph.path,
                         help='Path to profiles list (default=%(default)s)',
@@ -285,6 +289,7 @@ def parse_args(args=None):
 
 def main():
     args = parse_args()
+    logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 
     # Load list of profiles from file.
     #

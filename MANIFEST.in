@@ -6,3 +6,4 @@ include paver-minilib.zip
 recursive-include microdrop_launcher *
 recursive-exclude microdrop_launcher *.pyc
 recursive-exclude microdrop_launcher *~
+recursive-exclude microdrop_launcher .ropeproject/*

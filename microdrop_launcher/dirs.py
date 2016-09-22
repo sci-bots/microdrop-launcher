@@ -1,24 +1,12 @@
-import os
-import sys
-
 import appdirs
 import path_helpers as ph
 
+from . import conda_prefix
 
 class AppDirs(appdirs.AppDirs):
     """Convenience wrapper for getting application dirs."""
     def __init__(self, *args, **kwargs):
-        if any(['continuum analytics, inc.' in sys.version.lower(),
-                'conda' in sys.version.lower()]):
-            # Assume running under Conda.
-            if 'CONDA_PREFIX' in os.environ:
-                self.conda_prefix = ph.path(os.environ['CONDA_PREFIX'])
-            else:
-                # Infer Conda prefix as parent directory of Python executable.
-                self.conda_prefix = ph.path(sys.executable).parent.realpath()
-        else:
-            # Assume running under Conda.
-            self.conda_prefix = None
+        self.conda_prefix = conda_prefix()
         super(AppDirs, self).__init__(*args, **kwargs)
 
     def _get_conda_path(self, base):

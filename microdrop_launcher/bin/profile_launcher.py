@@ -12,6 +12,7 @@ import path_helpers as ph
 import pygtkhelpers.ui.dialogs as gd
 import yaml
 
+from ..auto_upgrade import auto_upgrade
 from ..dirs import AppDirs
 from ..config import create_config_directory
 from ..profile import (ICON_PATH, SAVED_COLUMNS, drop_version_errors,
@@ -281,6 +282,8 @@ def parse_args(args=None):
     parser.add_argument('--no-auto', action='store_true',
                         help='If not set and there is only a single profile, '
                         'MicroDrop is launched using the profile.')
+    parser.add_argument('--no-upgrade', action='store_true',
+                        help='Do not check for package upgrade.')
 
     args = parser.parse_args()
 
@@ -290,6 +293,9 @@ def parse_args(args=None):
 def main():
     args = parse_args()
     logging.basicConfig(level=getattr(logging, args.log_level.upper()))
+
+    if not args.no_upgrade:
+        auto_upgrade()
 
     # Load list of profiles from file.
     #

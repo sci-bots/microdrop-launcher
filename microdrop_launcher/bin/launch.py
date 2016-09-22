@@ -6,6 +6,7 @@ import sys
 import mpm
 import mpm.bin
 
+from ..auto_upgrade import auto_upgrade
 from ..profile import launch_profile
 
 
@@ -25,6 +26,8 @@ def parse_args(args=None):
     parser = argparse.ArgumentParser(description='Microdrop launcher',
                                      parents=[INSTALL_REQUIREMENTS_PARSER])
     parser.add_argument('--install-plugin-requirements', action='store_true')
+    parser.add_argument('--no-upgrade', action='store_true',
+                        help='Do not check for package upgrade.')
 
     return parser.parse_args()
 
@@ -34,6 +37,9 @@ def main(args=None):
         args = parse_args()
     args = mpm.bin.validate_args(args)
     logger.debug('Arguments: %s', args)
+
+    if not args.no_upgrade:
+        auto_upgrade()
 
     if args.install_plugin_requirements:
         # Run plugin "on_install" hook.

@@ -12,6 +12,8 @@ def auto_upgrade():
     '''
     Upgrade package.
 
+    *New in ``0.1.post43``*.
+
     Parameters
     ----------
     package_name : str

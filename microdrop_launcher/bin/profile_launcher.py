@@ -16,9 +16,9 @@ from ..auto_upgrade import auto_upgrade
 from ..dirs import AppDirs
 from ..config import create_config_directory
 from ..profile import (ICON_PATH, SAVED_COLUMNS, drop_version_errors,
-                       get_major_version, installed_major_version,
-                       launch_profile, load_profiles_info,
-                       profile_major_version)
+                       get_major_version, import_profile,
+                       installed_major_version, launch_profile,
+                       load_profiles_info, profile_major_version)
 
 
 class LaunchDialog(object):
@@ -36,12 +36,7 @@ class LaunchDialog(object):
         if folder is None:
             return
 
-        major_version = profile_major_version(folder)
-        self.df_profiles = self.df_profiles.append({'path': folder,
-                                                    'major_version':
-                                                    major_version},
-                                                   ignore_index=True)
-        self.df_profiles.drop_duplicates(subset=['path'], inplace=True)
+        self.df_profiles = import_profile(self.df_profiles, folder)
         self.update_profiles_frame()
 
     def create_profile(self, folder=None):
@@ -138,6 +133,16 @@ class LaunchDialog(object):
                                         on_remove_clicked)
         self.content_area.pack_start(self.frame, expand=True, fill=True, padding=10)
         self.content_area.reorder_child(self.frame, 0)
+        self.dialog.show()
+
+        def _resize_dialog(*args):
+            # Resize dialog to fit allocated size of updated table.
+            x, y, width, height = (self.frame.get_child().get_child()
+                                   .get_child().get_allocation())
+            self.dialog.set_size_request(max(520, width + 30), 320)
+
+        # Queue resize request to allow table to be allocated before resizing.
+        gtk.idle_add(_resize_dialog)
 
     def run(self):
         self.dialog = gtk.Dialog()
@@ -162,10 +167,6 @@ class LaunchDialog(object):
         self.content_area.pack_end(buttons_area, expand=False, fill=False)
 
         self.update_profiles_frame()
-        self.dialog.show()
-        table = self.frame.get_child().get_child().get_child()
-        x, y, width, height = table.get_allocation()
-        self.dialog.set_size_request(width + 30, 320)
         self.dialog.props.resizable = False
         self.dialog.run()
 

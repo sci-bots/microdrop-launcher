@@ -152,8 +152,8 @@ class LaunchDialog(object):
 
         buttons_area = gtk.HBox()
         buttons_box = gtk.HButtonBox()
-        button_import = gtk.Button('Import...')
-        button_create = gtk.Button('Create...')
+        button_import = gtk.Button('_Import...')
+        button_create = gtk.Button('_Create...')
         button_import.connect('clicked', lambda *args:
                               self.import_profile(self.df_profiles
                                                   .path.get(0)))

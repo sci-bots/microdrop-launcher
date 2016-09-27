@@ -1,6 +1,6 @@
 appdirs
 jinja2
-microdrop-plugin-manager>=0.3.post4
+microdrop-plugin-manager>=0.3.post5
 numpydoc
 path_helpers
 pip_helpers>=0.6.post3

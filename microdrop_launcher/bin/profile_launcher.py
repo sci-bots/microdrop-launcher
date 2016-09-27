@@ -129,6 +129,8 @@ class LaunchDialog(object):
 
         if self.frame is not None:
             self.content_area.remove(self.frame)
+        drop_version_errors(self.df_profiles, missing=False, mismatch=True,
+                            inplace=True)
         self.frame = get_profiles_table(self.df_profiles, on_launch_clicked,
                                         on_remove_clicked)
         self.content_area.pack_start(self.frame, expand=True, fill=True, padding=10)

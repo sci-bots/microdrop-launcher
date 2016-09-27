@@ -179,9 +179,8 @@ def verify_profile_version(profile_path):
                            % (release_version, installed_version))
 
 
-def launch_profile(profile_path):
+def verify_or_create_profile_version(profile_path):
     profile_path = ph.path(profile_path)
-    config_file = profile_path.joinpath('microdrop.ini')
 
     try:
         verify_profile_version(profile_path)
@@ -219,6 +218,12 @@ def launch_profile(profile_path):
         with release_version_path.open('w') as output:
             output.write(pkg_resources.get_distribution('microdrop').version)
 
+
+def launch_profile(profile_path):
+    profile_path = ph.path(profile_path)
+    verify_or_create_profile_version(profile_path)
+
+    config_file = profile_path.joinpath('microdrop.ini')
     # Major version in `RELEASE-VERSION` file and major version of
     # installed MicroDrop package **match**.
     original_directory = ph.path(os.getcwd())

@@ -18,7 +18,8 @@ from ..config import create_config_directory
 from ..profile import (ICON_PATH, SAVED_COLUMNS, drop_version_errors,
                        get_major_version, import_profile,
                        installed_major_version, launch_profile,
-                       load_profiles_info, profile_major_version)
+                       load_profiles_info, profile_major_version,
+                       verify_or_create_profile_version)
 
 
 class LaunchDialog(object):
@@ -36,8 +37,16 @@ class LaunchDialog(object):
         if folder is None:
             return
 
-        self.df_profiles = import_profile(self.df_profiles, folder)
-        self.update_profiles_frame()
+        try:
+            verify_or_create_profile_version(folder)
+        except RuntimeError, exception:
+            # Major version in `RELEASE-VERSION` file and major version of
+            # installed MicroDrop package **do not match**.
+            gd.error(str(exception))
+        else:
+            self.df_profiles = import_profile(self.df_profiles, folder,
+                                              parent=self.dialog)
+            self.update_profiles_frame()
 
     def create_profile(self, folder=None):
         # Display GTK dialog to select output directory.

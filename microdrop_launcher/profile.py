@@ -17,6 +17,7 @@ except ImportError:
     GUI_AVAILABLE = False
 else:
     GUI_AVAILABLE = True
+    from pygtkhelpers.ui.views.command_textview import get_run_command_dialog
 
 from .config import create_config_directory
 
@@ -249,7 +250,7 @@ def installed_major_version():
     return get_major_version(installed_version_str)
 
 
-def import_profile(df_profiles, profile_path):
+def import_profile(df_profiles, profile_path, parent=None):
     '''
     Run post-installation hook for each plugin in profile and append imported
     profile to profiles table.
@@ -273,7 +274,29 @@ def import_profile(df_profiles, profile_path):
     plugins_directory = (mpm.commands
                          .get_plugins_directory(microdrop_user_root=
                                                 profile_path))
-    install_dependencies(plugins_directory)
+    if GUI_AVAILABLE:
+        command =  (r'python -m mpm -d "{}" hook on_install'
+                    .format(plugins_directory))
+        title = 'Install plugin dependencies...'
+
+        cre_on_install = re.compile(r'plugins.(?P<plugin_name>\w+).*'
+                                    r'on_plugin_install\.py')
+
+        def data_callback(dialog, command_view, fd, data):
+            match = cre_on_install.search(data)
+            if match:
+                # Update label with name of plugin that is being processed.
+                (dialog.get_content_area().get_children()[0]
+                .set_markup('Installing plugin dependencies for: <b>{}</b>'
+                            .format(match.group('plugin_name'))))
+
+        dialog = get_run_command_dialog(command, title=title, shell=True,
+                                        resizable=False, parent=parent,
+                                        data_callback=data_callback)
+        dialog.run()
+        dialog.destroy()
+    else:
+        install_dependencies(plugins_directory)
     major_version = profile_major_version(profile_path)
     df_profiles = df_profiles.append({'path': profile_path,
                                       'major_version': major_version},

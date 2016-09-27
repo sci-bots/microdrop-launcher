@@ -17,7 +17,8 @@ setup(name='microdrop-launcher',
       packages=['microdrop_launcher'],
       install_requires=['appdirs', 'jinja2',
                         'microdrop-plugin-manager>=0.3.post4', 'path_helpers',
-                        'pip_helpers>=0.6.post3'],
+                        'pip_helpers>=0.6.post3',
+                        'wheeler.pygtkhelpers>=0.14.post7'],
       # Install data listed in `MANIFEST.in`
       include_package_data=True,
       entry_points = {'console_scripts':

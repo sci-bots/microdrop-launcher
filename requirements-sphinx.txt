@@ -4,3 +4,4 @@ microdrop-plugin-manager>=0.3.post4
 numpydoc
 path_helpers
 pip_helpers>=0.6.post3
+wheeler.pygtkhelpers>=0.14.post7

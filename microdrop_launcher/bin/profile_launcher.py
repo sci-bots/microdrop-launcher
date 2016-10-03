@@ -4,6 +4,7 @@ import concurrent.futures
 import logging
 import pkg_resources
 import re
+import subprocess as sp
 import sys
 
 import gtk
@@ -338,20 +339,12 @@ def main():
     # Look up major version of each profile.
     df_profiles['major_version'] = df_profiles.path.map(profile_major_version)
 
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    # Upgrade `microdrop-launcher` package in background.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         def _auto_upgrade():
-            # Upgrade `microdrop-launcher` package if there is a new version
-            # available.
-            print 'Checking for `microdrop-launcher` updates',
-            upgrade_info = auto_upgrade()
-            if upgrade_info['new_version']:
-                print 'Upgraded to:', upgrade_info['new_version']
-            elif upgrade_info['original_version'] is None:
-                print 'Error checking for updates (offline?)'
-            else:
-                print ('Up to date: microdrop-launcher=={}'
-                    .format(upgrade_info['original_version']))
+            process = sp.Popen([sys.executable, '-m',
+                                'microdrop_launcher.auto_upgrade'])
+            return process.communicate()
 
         def _launch(args, df_profiles):
             if args.default or (not args.no_auto and df_profiles.shape[0] == 1):
@@ -385,10 +378,14 @@ def main():
                 output.write(profiles_str)
             return return_code
 
+        futures = []
         if not args.no_upgrade:
-            executor.submit(_auto_upgrade)
+            upgrade_future = executor.submit(_auto_upgrade)
+            futures.append(upgrade_future)
         launch_future = executor.submit(_launch, args, df_profiles)
-        return concurrent.futures.wait([launch_future])
+        futures.append(launch_future)
+        concurrent.futures.wait(futures)
+        return launch_future.result()
 
 
 if __name__ == '__main__':

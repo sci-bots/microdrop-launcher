@@ -49,6 +49,20 @@ def auto_upgrade():
                 'installed_dependencies': []}
 
 
+def main():
+    # Upgrade `microdrop-launcher` package if there is a new version
+    # available.
+    print 'Checking for `microdrop-launcher` updates',
+    upgrade_info = auto_upgrade()
+    if upgrade_info['new_version']:
+        print 'Upgraded to:', upgrade_info['new_version']
+    elif upgrade_info['original_version'] is None:
+        print 'Error checking for updates (offline?)'
+    else:
+        print ('Up to date: microdrop-launcher=={}'
+               .format(upgrade_info['original_version']))
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    auto_upgrade()
+    main()

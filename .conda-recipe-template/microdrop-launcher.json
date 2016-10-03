@@ -1,0 +1,45 @@
+{
+    "menu_name": "MicroDrop",
+    "menu_items":
+        [
+            {
+                "name": "Documentation",
+                "webbrowser": "http://microdrop.readthedocs.io",
+                "icon": "${MENU_DIR}/microdrop.ico"
+            },
+            {
+                "name": "GitHub project",
+                "webbrowser": "https://github.com/wheeler-microfluidics/microdrop"
+            },
+            {
+                "system": "python.exe",
+                "name": "MicroDrop Profile Manager",
+                "workdir": "${PREFIX}",
+                "icon": "${MENU_DIR}/microdrop.ico",
+                "scriptarguments":
+                ["${PREFIX}\\Scripts\\microdrop-profile-manager.exe",
+                 "--no-auto"],
+                "desktop": true,
+                "quicklaunch": true
+            },
+            {
+                "system": "python.exe",
+                "name": "MicroDrop",
+                "workdir": "${PREFIX}",
+                "icon": "${MENU_DIR}/microdrop.ico",
+                "scriptarguments":
+                ["${PREFIX}\\Scripts\\microdrop-profile-manager.exe"],
+                "desktop": true,
+                "quicklaunch": true
+            },
+            {
+                "name": "MicroDrop environment prompt",
+                "system": "%windir%\\system32\\cmd.exe",
+                "scriptarguments": ["/K",
+                                    "${ROOT_PREFIX}\\Scripts\\activate.bat",
+                                    "${PREFIX}"],
+                "icon": "${MENU_DIR}/Iconleak-Atrous-Console.ico",
+                "desktop": true
+            }
+        ]
+}

@@ -31,6 +31,10 @@ ICON_PATH = pkg_resources.resource_filename('microdrop', 'microdrop.ico')
 SAVED_COLUMNS = ['used_timestamp', 'path']
 
 
+class VersionError(RuntimeError):
+    pass
+
+
 def load_profiles_info(profiles_path):
     '''
     Load list of profiles from file.
@@ -38,6 +42,12 @@ def load_profiles_info(profiles_path):
     If file does not exist or list is empty, the profile list is initialized
     with the default profile directory path (creating a profile at the default
     location, if it does not already exist).
+
+    .. versionchanged:: 0.1.post61
+        If profile already exists in the default profile path, but the profile
+        does not match the MicroDrop major version, a default profile path is
+        used that is specific to MicroDrop major version of the form
+        ``MicroDrop-v<major_version>``.
 
     Parameters
     ----------
@@ -64,6 +74,24 @@ def load_profiles_info(profiles_path):
 
     default_profile_path = mpm.bin.get_plugins_directory().parent
 
+    if default_profile_path.isdir():
+        try:
+            # Verify default profile directory matches major MicroDrop version.
+            verify_profile_version(default_profile_path)
+        except VersionError:
+            # Default profile path already exists, but profile does not match
+            # MicroDrop major version.
+
+            # Query the currently installed version of the MicroDrop Python package.
+            installed_version_str = (pkg_resources
+                                     .get_distribution('microdrop').version)
+            major_version = get_major_version(installed_version_str)
+
+            # Use default profile path specific to MicroDrop major version.
+            default_profile_path = (default_profile_path.parent
+                                    .joinpath('MicroDrop-v{}'
+                                              .format(major_version)))
+
     if not profiles and not default_profile_path.isdir():
         # No existing profiles.  Create default profile.
         print 'No existing profiles.  Create default profile at {}.'.format(default_profile_path)
@@ -84,8 +112,10 @@ def load_profiles_info(profiles_path):
         # Use default profile path.
         profiles = [{'path': str(default_profile_path),
                      'used_timestamp': None}]
-
-    df_profiles = pd.DataFrame(profiles, columns=SAVED_COLUMNS)
+        df_profiles = pd.DataFrame(None, columns=SAVED_COLUMNS)
+        df_profiles = import_profile(df_profiles, default_profile_path, parent=None)
+    else:
+        df_profiles = pd.DataFrame(profiles, columns=SAVED_COLUMNS)
     df_profiles.loc[df_profiles.used_timestamp == 'nan', 'used_timestamp'] = ''
     df_profiles.sort_values('used_timestamp', ascending=False, inplace=True)
     df_profiles.drop_duplicates(subset=['path'], inplace=True)
@@ -117,7 +147,7 @@ def drop_version_errors(df_profiles, missing=False, mismatch=False,
     def version_error(profile_path):
         try:
             verify_profile_version(profile_path)
-        except RuntimeError:
+        except VersionError:
             # Major version in `RELEASE-VERSION` file and major version of
             # installed MicroDrop package **do not match**.
             return mismatch
@@ -146,7 +176,7 @@ def verify_profile_version(profile_path):
     ------
     IOError
         If no version file found in profile directory.
-    RuntimeError
+    VersionError
         If profile version does not match installed MicroDrop version.
     '''
     profile_path = ph.path(profile_path)
@@ -174,7 +204,7 @@ def verify_profile_version(profile_path):
         # installed MicroDrop package **do not match**.
         #
         # Notify the user and wait for user input to continue.
-        raise RuntimeError('Configuration directory major version (%s) does '
+        raise VersionError('Configuration directory major version (%s) does '
                            'not match installed major MicroDrop version (%s)'
                            % (release_version, installed_version))
 
@@ -207,7 +237,7 @@ def verify_or_create_profile_version(profile_path):
             response = dialog.run()
             dialog.destroy()
             if response == gtk.RESPONSE_NO:
-                raise RuntimeError('Not launching MicroDrop since profile was '
+                raise VersionError('Not launching MicroDrop since profile was '
                                    'not created using the installed version of'
                                    ' MicroDrop ({})'
                                    .format(installed_major_version()))
@@ -276,6 +306,7 @@ def import_profile(df_profiles, profile_path, parent=None):
         Table of MicroDrop profile descriptions with row appended for imported
         profile.
     '''
+    verify_or_create_profile_version(profile_path)
     plugins_directory = (mpm.commands
                          .get_plugins_directory(microdrop_user_root=
                                                 profile_path))

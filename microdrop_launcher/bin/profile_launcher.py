@@ -194,6 +194,7 @@ def get_profiles_table(df_profiles, launch_callback, remove_callback,
         return base_i.joinpath(name_i)
 
     grid_columns = ['path', 'major_version']
+
     # One header row plus one row per profile
     # One column for each column in `grid_columns`, plus two columns for launch
     # and remove buttons, respectively.
@@ -353,7 +354,15 @@ def main():
     if not args.no_upgrade:
         # Upgrade `microdrop-launcher` package if there is a new version
         # available.
-        auto_upgrade()
+        print 'Checking for `microdrop-launcher` updates',
+        upgrade_info = auto_upgrade()
+        if upgrade_info['new_version']:
+            print 'Upgraded to:', upgrade_info['new_version']
+        elif upgrade_info['original_version'] is None:
+            print 'Error checking for updates (offline?)'
+        else:
+            print ('Up to date: microdrop-launcher=={}'
+                   .format(upgrade_info['original_version']))
 
     return return_code
 

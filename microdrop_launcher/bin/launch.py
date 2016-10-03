@@ -54,7 +54,13 @@ def main(args=None):
     if not args.no_upgrade:
         # Upgrade `microdrop-launcher` package if there is a new version
         # available.
-        auto_upgrade()
+        print 'Checking for `microdrop-launcher` updates',
+        upgrade_info = auto_upgrade()
+        if upgrade_info['new_version']:
+            print 'Upgraded to:', upgrade_info['new_version']
+        else:
+            print ('Up to date: microdrop-launcher=={}'
+                   .format(upgrade_info['original_version']))
 
     return return_code
 

@@ -12,7 +12,7 @@ def auto_upgrade():
     '''
     Upgrade package.
 
-    *New in ``0.1.post43``*.
+    .. versionadded:: 0.1.post43
 
     Parameters
     ----------
@@ -21,13 +21,14 @@ def auto_upgrade():
 
     Returns
     -------
-    (upgraded, original_version, new_version) : (bool, str)
-        Tuple containing:
-         - :data:`upgraded`: ``True`` if package was upgraded.
+    dict
+        Dictionary containing:
          - :data:`original_version`: Package version before upgrade.
-         - :data:`new_version`:
-             Package version after upgrade.  If package is up-to-date, this is
-             the same as :data:`original_version`.
+         - :data:`new_version`: Package version after upgrade (`None` if
+           package was not upgraded).
+         - :data:`installed_dependencies`: List of dependencies installed
+           during package upgrade.  Each dependency is represented as a
+           dictionary of the form ``{'package': ..., 'version': ...}``.
     '''
     try:
         package_name = 'microdrop-launcher'
@@ -41,8 +42,11 @@ def auto_upgrade():
         else:
             logger.info('%s up to date: %s', result['package'],
                         result['original_version'])
+        return result
     except Exception, exception:
         logger.debug('Error upgrading:\n%s', exception)
+        return {'original_version': None, 'new_version': None,
+                'installed_dependencies': []}
 
 
 if __name__ == '__main__':

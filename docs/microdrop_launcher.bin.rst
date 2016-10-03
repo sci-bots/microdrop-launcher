@@ -9,10 +9,18 @@ bin Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`install_dependencies` Module
-----------------------------------
+:mod:`launch` Module
+--------------------
 
-.. automodule:: microdrop_launcher.bin.install_dependencies
+.. automodule:: microdrop_launcher.bin.launch
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`profile_launcher` Module
+------------------------------
+
+.. automodule:: microdrop_launcher.bin.profile_launcher
     :members:
     :undoc-members:
     :show-inheritance:

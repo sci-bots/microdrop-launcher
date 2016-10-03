@@ -1,5 +1,6 @@
 import datetime as dt
 import functools as ft
+import concurrent.futures
 import logging
 import pkg_resources
 import re
@@ -337,47 +338,57 @@ def main():
     # Look up major version of each profile.
     df_profiles['major_version'] = df_profiles.path.map(profile_major_version)
 
-    if args.default or (not args.no_auto and df_profiles.shape[0] == 1):
-        # Launch MicroDrop with most recently used (or only available) profile.
-        return_code = launch_profile_row(df_profiles.iloc[0])
-        if return_code == 0:
-            df_profiles.used_timestamp[0] = str(dt.datetime.now())
-    else:
-        # Display dialog to manage profiles or launch a profile.
-        launch_dialog = LaunchDialog(df_profiles)
-        launch_dialog.run()
-        return_code = launch_dialog.return_code
-        df_profiles = launch_dialog.df_profiles
 
-    # Save most recent list of profiles to disk (most recently used first).
-    #
-    # List can be changed using dialog by:
-    #  - Creating a new profile.
-    #  - Importing a profile.
-    #  - Updating used timestamp by launching a profile.
-    df_profiles = df_profiles.astype(str)
-    df_profiles.loc[df_profiles.used_timestamp == 'nan', 'used_timestamp'] = ''
-    df_profiles.sort_values('used_timestamp', ascending=False, inplace=True)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        def _auto_upgrade():
+            # Upgrade `microdrop-launcher` package if there is a new version
+            # available.
+            print 'Checking for `microdrop-launcher` updates',
+            upgrade_info = auto_upgrade()
+            if upgrade_info['new_version']:
+                print 'Upgraded to:', upgrade_info['new_version']
+            elif upgrade_info['original_version'] is None:
+                print 'Error checking for updates (offline?)'
+            else:
+                print ('Up to date: microdrop-launcher=={}'
+                    .format(upgrade_info['original_version']))
 
-    with args.profiles_path.open('w') as output:
-        profiles_str = yaml.dump(df_profiles[SAVED_COLUMNS]
-                                 .to_dict('records'), default_flow_style=False)
-        output.write(profiles_str)
+        def _launch(args, df_profiles):
+            if args.default or (not args.no_auto and df_profiles.shape[0] == 1):
+                # Launch MicroDrop with most recently used (or only available) profile.
+                return_code = launch_profile_row(df_profiles.iloc[0])
+                if return_code == 0:
+                    df_profiles.used_timestamp[0] = str(dt.datetime.now())
+            else:
+                # Display dialog to manage profiles or launch a profile.
+                launch_dialog = LaunchDialog(df_profiles)
+                launch_dialog.run()
+                return_code = launch_dialog.return_code
+                df_profiles = launch_dialog.df_profiles
 
-    if not args.no_upgrade:
-        # Upgrade `microdrop-launcher` package if there is a new version
-        # available.
-        print 'Checking for `microdrop-launcher` updates',
-        upgrade_info = auto_upgrade()
-        if upgrade_info['new_version']:
-            print 'Upgraded to:', upgrade_info['new_version']
-        elif upgrade_info['original_version'] is None:
-            print 'Error checking for updates (offline?)'
-        else:
-            print ('Up to date: microdrop-launcher=={}'
-                   .format(upgrade_info['original_version']))
+            # Save most recent list of profiles to disk (most recently used first).
+            #
+            # List can be changed using dialog by:
+            #  - Creating a new profile.
+            #  - Importing a profile.
+            #  - Updating used timestamp by launching a profile.
+            df_profiles = df_profiles.astype(str)
+            df_profiles.loc[df_profiles.used_timestamp == 'nan',
+                            'used_timestamp'] = ''
+            df_profiles.sort_values('used_timestamp', ascending=False,
+                                    inplace=True)
 
-    return return_code
+            with args.profiles_path.open('w') as output:
+                profiles_str = yaml.dump(df_profiles[SAVED_COLUMNS]
+                                        .to_dict('records'),
+                                         default_flow_style=False)
+                output.write(profiles_str)
+            return return_code
+
+        if not args.no_upgrade:
+            executor.submit(_auto_upgrade)
+        launch_future = executor.submit(_launch, args, df_profiles)
+        return concurrent.futures.wait([launch_future])
 
 
 if __name__ == '__main__':

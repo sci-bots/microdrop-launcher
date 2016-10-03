@@ -1,4 +1,5 @@
 appdirs
+futures
 jinja2
 microdrop-plugin-manager>=0.3.post5
 path_helpers

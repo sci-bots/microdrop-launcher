@@ -306,9 +306,6 @@ def main():
     args = parse_args()
     logging.basicConfig(level=getattr(logging, args.log_level.upper()))
 
-    if not args.no_upgrade:
-        auto_upgrade()
-
     # Load list of profiles from file.
     #
     # If file does not exist or list is empty, the profile list is initialized
@@ -352,6 +349,11 @@ def main():
         profiles_str = yaml.dump(df_profiles[SAVED_COLUMNS]
                                  .to_dict('records'), default_flow_style=False)
         output.write(profiles_str)
+
+    if not args.no_upgrade:
+        # Upgrade `microdrop-launcher` package if there is a new version
+        # available.
+        auto_upgrade()
 
     return return_code
 

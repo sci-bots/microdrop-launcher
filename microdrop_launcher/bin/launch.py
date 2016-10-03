@@ -38,9 +38,6 @@ def main(args=None):
     args = mpm.bin.validate_args(args)
     logger.debug('Arguments: %s', args)
 
-    if not args.no_upgrade:
-        auto_upgrade()
-
     if args.install_plugin_requirements:
         # Run plugin "on_install" hook.
         sp.call([sys.executable, '-m', 'mpm', '-d', args.plugins_directory,
@@ -52,7 +49,14 @@ def main(args=None):
         args.config_file = (args.plugins_directory.parent
                             .joinpath('microdrop.ini'))
 
-    return launch_profile(args.config_file.parent)
+    return_code = launch_profile(args.config_file.parent)
+
+    if not args.no_upgrade:
+        # Upgrade `microdrop-launcher` package if there is a new version
+        # available.
+        auto_upgrade()
+
+    return return_code
 
 
 if __name__ == '__main__':

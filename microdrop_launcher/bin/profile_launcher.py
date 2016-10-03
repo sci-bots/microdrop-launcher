@@ -228,12 +228,25 @@ def get_profiles_table(df_profiles, launch_callback, remove_callback,
         button_launch_i = gtk.Button('Launch')
         button_open_i = gtk.Button('Open')
         button_remove_i = gtk.Button('Remove')
-        on_launch_clicked = ft.partial(launch_callback, row_i)
-        on_open_clicked = ft.partial(ph.path(row_i.path).launch)
-        on_remove_clicked = ft.partial(remove_callback, row_i)
-        button_launch_i.connect('clicked', lambda *args: on_launch_clicked())
-        button_open_i.connect('clicked', lambda *args: on_open_clicked())
-        button_remove_i.connect('clicked', lambda *args: on_remove_clicked())
+
+        # Use `functools.partial` to bind parameters (through [currying][1])
+        # for current profile to callback functions.
+        #
+        # Without [currying][1], all callbacks would *erroneously* be called
+        # using references to parameters of the **last** profile processed.
+        #
+        # [1]: https://mtomassoli.wordpress.com/2012/03/18/currying-in-python/
+        on_launch_clicked = ft.partial(lambda row, *args:
+                                       launch_callback(row), row_i)
+        on_open_clicked = ft.partial(lambda profile_path, *args:
+                                     profile_path.launch(),
+                                     ph.path(row_i.path))
+        on_remove_clicked = ft.partial(lambda row, *args: remove_callback(row),
+                                       row_i)
+
+        button_launch_i.connect('clicked', on_launch_clicked)
+        button_open_i.connect('clicked', on_open_clicked)
+        button_remove_i.connect('clicked', on_remove_clicked)
         # button_remove_i.connect('clicked', lambda
         for button_ij, j in zip((button_launch_i, button_open_i,
                                  button_remove_i), range(j + 1, j + 4)):

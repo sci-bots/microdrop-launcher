@@ -1,5 +1,6 @@
 import os
 import pkg_resources
+import platform
 import re
 import subprocess as sp
 import sys
@@ -19,6 +20,7 @@ else:
     GUI_AVAILABLE = True
     from pygtkhelpers.ui.views.command_textview import get_run_command_dialog
 
+from . import conda_prefix
 from .config import create_config_directory
 
 cre_version = re.compile(r'^(?P<major>\d+)\.')
@@ -249,6 +251,35 @@ def verify_or_create_profile_version(profile_path):
             output.write(pkg_resources.get_distribution('microdrop').version)
 
 
+def environment_prompt(profile_path):
+    '''
+    Launch command prompt window for Python environment, with environment
+    variables set for MicroDrop profile and configuration paths (non-blocking).
+
+    .. versionadded:: 0.1.post64
+    '''
+    profile_path = ph.path(profile_path)
+    config_file = profile_path.joinpath('microdrop.ini')
+
+    env = os.environ.copy()
+
+    # Set environment variables for MicroDrop profile and configuration paths.
+    env['MICRODROP_PROFILE'] = str(profile_path)
+    env['MICRODROP_CONFIG'] = str(config_file)
+
+    # Launch command prompt
+    if platform.system() == 'Windows':
+        if conda_prefix() is not None:
+            command = (r'start cmd "/K" {prefix}\Scripts\activate.bat {prefix}'
+                       .format(prefix=conda_prefix()))
+        else:
+            command = r'start cmd'
+        sp.call(command, shell=True, cwd=str(profile_path), env=env)
+    else:
+        raise RuntimeError('OS not currently supported: {}'
+                           .format(platform.system()))
+
+
 def launch_profile(profile_path):
     profile_path = ph.path(profile_path)
     verify_or_create_profile_version(profile_path)
@@ -262,12 +293,14 @@ def launch_profile(profile_path):
         # file.
         os.chdir(config_file.parent)
         return_code = None
+        env = os.environ.copy()
+        env['MICRODROP_PROFILE'] = str(profile_path)
+        env['MICRODROP_CONFIG'] = str(config_file)
         # Return code of `5` indicates program should be restarted.
         while return_code is None or return_code == 5:
             # Launch MicroDrop and save return code.
-            return_code = sp.call([sys.executable, '-m',
-                                    'microdrop.microdrop', '-c',
-                                    config_file])
+            return_code = sp.call([sys.executable, '-m', 'microdrop.microdrop',
+                                   '-c', config_file], env=env)
     finally:
         # Restore original working directory.
         os.chdir(original_directory)

@@ -18,7 +18,7 @@ from ..auto_upgrade import auto_upgrade
 from ..dirs import AppDirs
 from ..config import create_config_directory
 from ..profile import (ICON_PATH, SAVED_COLUMNS, drop_version_errors,
-                       get_major_version, import_profile,
+                       environment_prompt, get_major_version, import_profile,
                        installed_major_version, launch_profile,
                        load_profiles_info, profile_major_version,
                        verify_or_create_profile_version)
@@ -229,6 +229,7 @@ def get_profiles_table(df_profiles, launch_callback, remove_callback,
 
         button_launch_i = gtk.Button('Launch')
         button_open_i = gtk.Button('Open')
+        button_prompt_i = gtk.Button('Prompt')
         button_remove_i = gtk.Button('Remove')
 
         # Use `functools.partial` to bind parameters (through [currying][1])
@@ -243,15 +244,20 @@ def get_profiles_table(df_profiles, launch_callback, remove_callback,
         on_open_clicked = ft.partial(lambda profile_path, *args:
                                      profile_path.launch(),
                                      ph.path(row_i.path))
+        on_prompt_clicked = ft.partial(lambda profile_path, *args:
+                                       environment_prompt(profile_path),
+                                       row_i.path)
         on_remove_clicked = ft.partial(lambda row, *args: remove_callback(row),
                                        row_i)
 
         button_launch_i.connect('clicked', on_launch_clicked)
         button_open_i.connect('clicked', on_open_clicked)
+        button_prompt_i.connect('clicked', on_prompt_clicked)
         button_remove_i.connect('clicked', on_remove_clicked)
         # button_remove_i.connect('clicked', lambda
         for button_ij, j in zip((button_launch_i, button_open_i,
-                                 button_remove_i), range(j + 1, j + 4)):
+                                 button_prompt_i, button_remove_i),
+                                range(j + 1, j + 5)):
             table.attach(button_ij, left_attach=j, right_attach=j + 1,
                          **row_kwargs)
 

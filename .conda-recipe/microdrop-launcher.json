@@ -12,23 +12,19 @@
                 "webbrowser": "https://github.com/wheeler-microfluidics/microdrop"
             },
             {
-                "system": "python.exe",
+                "script": "${PYTHON_SCRIPTS}/microdrop-profile-manager.exe",
                 "name": "MicroDrop Profile Manager",
                 "workdir": "${PREFIX}",
                 "icon": "${MENU_DIR}/microdrop.ico",
-                "scriptarguments":
-                ["${PREFIX}\\Scripts\\microdrop-profile-manager.exe",
-                 "--no-auto"],
+                "scriptarguments": ["--no-auto"],
                 "desktop": true,
                 "quicklaunch": true
             },
             {
-                "system": "python.exe",
+                "script": "${PYTHON_SCRIPTS}/microdrop-profile-manager.exe",
                 "name": "MicroDrop",
                 "workdir": "${PREFIX}",
                 "icon": "${MENU_DIR}/microdrop.ico",
-                "scriptarguments":
-                ["${PREFIX}\\Scripts\\microdrop-profile-manager.exe"],
                 "desktop": true,
                 "quicklaunch": true
             },

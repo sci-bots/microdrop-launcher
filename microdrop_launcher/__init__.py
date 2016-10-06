@@ -59,7 +59,17 @@ def conda_upgrade(package_name):
     --------
     :func:`pip_helpers.upgrade`
     '''
-    output = sp.check_output(['conda', 'list', package_name])
+    result = {'package': package_name,
+              'original_version': None,
+              'new_version': None,
+              'installed_dependencies': []}
+
+    conda_exe = conda_prefix().joinpath('Scripts', 'conda.exe')
+    if not conda_exe.isfile():
+        # Could not locate `conda` executable.
+        return result
+
+    output = sp.check_output([conda_exe, 'list', package_name])
     output_last_line = output.strip().splitlines()[-1]
 
     result = {'package': package_name,
@@ -81,7 +91,7 @@ def conda_upgrade(package_name):
         raise pkg_resources.DistributionNotFound(package_name, [])
 
     # Running in a Conda environment.
-    process = sp.Popen(['conda', 'install', '-y',
+    process = sp.Popen([conda_exe, 'install', '-y',
                         package_name], stdout=sp.PIPE,
                         stderr=sp.STDOUT)
     lines = []

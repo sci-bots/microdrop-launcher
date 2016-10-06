@@ -1,19 +1,19 @@
 package:
-  name: {{ conda_package_name }}
-  version: {{ version }}
+  name: microdrop-launcher
+{% if GIT_DESCRIBE_NUMBER > '0' %}
+  version: {{ GIT_DESCRIBE_TAG[1:] }}.post{{ GIT_DESCRIBE_NUMBER }}
+{% else %}
+  version: {{ GIT_DESCRIBE_TAG[1:] }}
+{% endif %}
 
 build:
-  # entry_points:
-    # Put any entry points (scripts to be generated automatically) here. The
-    # syntax is module:function.  For example
-    #
-    # - msgpack-python = msgpack-python:main
-    #
-    # Would create an entry point called msgpack-python that calls msgpack-python.main()
+  entry_points:
+    - microdrop-profile-manager = microdrop_launcher.bin.profile_launcher:main
+    - launch-microdrop = microdrop_launcher.bin.launch:main
 
   # If this is a new build for the same version, increment the build
   # number. If you do not include this key, it defaults to 0.
-  number: {{ build_number }}
+  number: 0
 
 requirements:
   build:
@@ -22,6 +22,7 @@ requirements:
     - futures
     - jinja2
     - microdrop-plugin-manager >=0.3.post6
+    - paver
     - pip-helpers >=0.6.post3
     - pycairo-gtk2
     - wheeler.pygtkhelpers >=0.14.post7
@@ -34,6 +35,11 @@ requirements:
     - pip-helpers >=0.6.post3
     - pycairo-gtk2
     - wheeler.pygtkhelpers >=0.14.post7
+
+# source will be downloaded prior to filling in jinja templates
+# Example assumes that this folder has setup.py in it
+source:
+  git_url: ../
 
 about:
   home: http://github.com/wheeler-microfluidics/microdrop-launcher

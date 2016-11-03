@@ -79,7 +79,7 @@ def load_profiles_info(profiles_path):
     if default_profile_path.isdir():
         try:
             # Verify default profile directory matches major MicroDrop version.
-            verify_profile_version(default_profile_path)
+            verify_or_create_profile_version(default_profile_path)
         except VersionError:
             # Default profile path already exists, but profile does not match
             # MicroDrop major version.

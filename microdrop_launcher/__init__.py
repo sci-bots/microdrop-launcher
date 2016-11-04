@@ -64,8 +64,11 @@ def conda_upgrade(package_name):
               'new_version': None,
               'installed_dependencies': []}
 
-    conda_exe = conda_prefix().joinpath('Scripts', 'conda.exe')
-    if not conda_exe.isfile():
+    for conda_filename_i in ('conda.exe', 'conda.bat'):
+        conda_exe = conda_prefix().joinpath('Scripts', conda_filename_i)
+        if conda_exe.isfile():
+            break
+    else:
         # Could not locate `conda` executable.
         return result
 

@@ -30,6 +30,15 @@ def conda_prefix():
     return conda_prefix
 
 
+def conda_executable():
+    for conda_filename_i in ('conda.exe', 'conda.bat'):
+        conda_exe = conda_prefix().joinpath('Scripts', conda_filename_i)
+        if conda_exe.isfile():
+            return conda_exe
+    else:
+        raise IOError('Could not locate `conda` executable.')
+
+
 def conda_upgrade(package_name):
     '''
     Upgrade Conda package.
@@ -64,36 +73,29 @@ def conda_upgrade(package_name):
               'new_version': None,
               'installed_dependencies': []}
 
-    for conda_filename_i in ('conda.exe', 'conda.bat'):
-        conda_exe = conda_prefix().joinpath('Scripts', conda_filename_i)
-        if conda_exe.isfile():
-            break
-    else:
+    try:
+        version_info = conda_version_info(package_name)
+    except IOError:
         # Could not locate `conda` executable.
         return result
 
-    output = sp.check_output([conda_exe, 'list', package_name])
-    output_last_line = output.strip().splitlines()[-1]
-
     result = {'package': package_name,
-              'original_version': None,
+              'original_version': version_info['installed'],
               'new_version': None,
               'installed_dependencies': []}
 
-    if not output_last_line.startswith('#'):
-        # Extract installed package version.
-        #
-        # If package is installed, output will be of the form:
-        #
-        #     # packages in environment at C:\Users\Christian\MicroDrop:
-        #     #
-        #     foo        0.1.0      0      <channel>
-        result['original_version'] = re.split(r'\s+', output_last_line)[1]
-    else:
+    if result['original_version'] is None:
         # Package is not installed.
         raise pkg_resources.DistributionNotFound(package_name, [])
 
+    latest_version = version_info['versions'][-1]
+
+    if result['original_version'] == latest_version:
+        # Latest version already installed.
+        return result
+
     # Running in a Conda environment.
+    conda_exe = conda_executable()
     process = sp.Popen([conda_exe, 'install', '-y',
                         package_name], stdout=sp.PIPE,
                         stderr=sp.STDOUT)
@@ -128,3 +130,47 @@ def conda_upgrade(package_name):
                                         packages)
         result['installed_dependencies'] = installed_dependencies
     return result
+
+
+def conda_version_info(package_name):
+    '''
+    .. versionadded:: 0.2.post5
+
+    Parameters
+    ----------
+    package_name : str
+        Conda package name.
+
+    Returns
+    -------
+    dict
+        Version information:
+
+         - ``latest``: Latest available version.
+         - ``installed``: Installed version (`None` if not installed).
+
+    Raises
+    ------
+    IOError
+        If Conda executable not found.
+    subprocess.CalledProcessError
+        If `conda search` command fails.
+
+        This happens, for example, if no internet connection is available.
+    '''
+    conda_exe = conda_executable()
+    # Use `-f` flag to search for package, but *no other packages that have
+    # `<package_name>` in the name).
+    output = sp.check_output([conda_exe, 'search', '-f', package_name])
+
+    output_lines = output.strip().splitlines()
+
+    line_tokens = [re.split(r'\s+', v) for v in output_lines[1:]]
+    versions = [tokens_i[2] if tokens_i[1] in ('*', '.') else tokens_i[1]
+                for tokens_i in line_tokens]
+
+    installed_indexes = [i for i, tokens_i in enumerate(line_tokens)
+                         if tokens_i[1] == '*']
+    installed_version = (None if not installed_indexes
+                         else versions[installed_indexes[0]])
+    return {'installed': installed_version, 'versions': versions}

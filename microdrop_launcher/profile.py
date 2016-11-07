@@ -96,7 +96,8 @@ def load_profiles_info(profiles_path):
 
     if not profiles and not default_profile_path.isdir():
         # No existing profiles.  Create default profile.
-        print 'No existing profiles.  Create default profile at {}.'.format(default_profile_path)
+        print ('No existing profiles.  Create default profile at {}.'
+               .format(default_profile_path))
         create_config_directory(output_dir=default_profile_path)
 
         for sub_directory_i in ('devices', 'plugins'):
@@ -107,6 +108,18 @@ def load_profiles_info(profiles_path):
         release_version_path = default_profile_path.joinpath('RELEASE-VERSION')
         with release_version_path.open('w') as output:
             output.write(pkg_resources.get_distribution('microdrop').version)
+        if GUI_AVAILABLE:
+            major_version = installed_major_version()
+            dialog = gtk.MessageDialog(type=gtk.MESSAGE_INFO)
+            dialog.set_icon_from_file(ICON_PATH)
+            dialog.set_title('New MicroDrop {} profile created'
+                             .format(major_version))
+            dialog.add_buttons(gtk.STOCK_OK, gtk.RESPONSE_OK)
+            dialog.set_markup('No existing profiles for MicroDrop {}.\n\n'
+                              'Created default profile at {}.'
+                              .format(major_version, default_profile_path))
+            dialog.run()
+            dialog.destroy()
 
     if not profiles and default_profile_path.isdir():
         # No profiles list found or empty profiles list.

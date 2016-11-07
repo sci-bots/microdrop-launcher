@@ -21,7 +21,7 @@ requirements:
     - appdirs
     - futures
     - jinja2
-    - microdrop-plugin-manager >=0.3.post6
+    - microdrop-plugin-manager >=0.4
     - paver
     - pip-helpers >=0.6.post3
     - pycairo-gtk2

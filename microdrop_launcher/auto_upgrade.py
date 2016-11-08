@@ -8,16 +8,21 @@ from . import conda_prefix, conda_upgrade
 logger = logging.getLogger(__name__)
 
 
-def auto_upgrade():
+def auto_upgrade(package_name, match_major_version=False):
     '''
     Upgrade package.
 
     .. versionadded:: 0.1.post43
 
+    .. versionchanged:: 0.2.post6
+        Add optional :data:`match_major_version` parameter.
+
     Parameters
     ----------
     package_name : str
         Package name.
+    match_major_version : bool,optional
+        Only upgrade to versions within the same major version.
 
     Returns
     -------
@@ -31,9 +36,8 @@ def auto_upgrade():
            dictionary of the form ``{'package': ..., 'version': ...}``.
     '''
     try:
-        package_name = 'microdrop-launcher'
         if conda_prefix():
-            result = conda_upgrade(package_name)
+            result = conda_upgrade(package_name, match_major_version)
         else:
             result = pih.upgrade(package_name)
         if result['new_version']:
@@ -56,7 +60,7 @@ def main():
     # Upgrade `microdrop-launcher` package if there is a new version
     # available.
     print 'Checking for `microdrop-launcher` updates',
-    upgrade_info = auto_upgrade()
+    upgrade_info = auto_upgrade('microdrop-launcher')
     if upgrade_info['new_version']:
         print 'Upgraded to:', upgrade_info['new_version']
     elif upgrade_info['original_version'] is None:

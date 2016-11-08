@@ -31,6 +31,14 @@ def conda_prefix():
 
 
 def conda_executable():
+    '''
+    .. versionadded:: 0.2.post5
+
+    Returns
+    -------
+    path_helpers.path
+        Path to Conda executable.
+    '''
     for conda_filename_i in ('conda.exe', 'conda.bat'):
         conda_exe = conda_prefix().joinpath('Scripts', conda_filename_i)
         if conda_exe.isfile():
@@ -39,14 +47,22 @@ def conda_executable():
         raise IOError('Could not locate `conda` executable.')
 
 
-def conda_upgrade(package_name):
+def conda_upgrade(package_name, match_major_version=False):
     '''
     Upgrade Conda package.
+
+    .. versionchanged:: 0.2.post5
+        Use `func:conda_version_info` to query Conda package version info.
+
+    .. versionchanged:: 0.2.post6
+        Add optional :data:`match_major_version` parameter.
 
     Parameters
     ----------
     package_name : str
         Package name.
+    match_major_version : bool,optional
+        Only upgrade to versions within the same major version.
 
     Returns
     -------
@@ -88,7 +104,14 @@ def conda_upgrade(package_name):
         # Package is not installed.
         raise pkg_resources.DistributionNotFound(package_name, [])
 
-    latest_version = version_info['versions'][-1]
+    if match_major_version:
+        f_major_version = lambda v: int(v.split('.')[0])
+        installed_major_version = f_major_version(version_info['installed'])
+        latest_version = filter(lambda v: f_major_version(v) ==
+                                installed_major_version,
+                                version_info['versions'])[-1]
+    else:
+        latest_version = version_info['versions'][-1]
 
     if result['original_version'] == latest_version:
         # Latest version already installed.
@@ -97,8 +120,8 @@ def conda_upgrade(package_name):
     # Running in a Conda environment.
     conda_exe = conda_executable()
     process = sp.Popen([conda_exe, 'install', '-y',
-                        package_name], stdout=sp.PIPE,
-                        stderr=sp.STDOUT)
+                        '{}=={}'.format(package_name, latest_version)],
+                       stdout=sp.PIPE, stderr=sp.STDOUT)
     lines = []
     ostream = sys.stdout
 

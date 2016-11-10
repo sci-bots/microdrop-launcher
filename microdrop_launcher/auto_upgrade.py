@@ -57,8 +57,7 @@ def main():
     '''
     .. versionadded:: 0.1.post62
     '''
-    # Upgrade `microdrop-launcher` package if there is a new version
-    # available.
+    # Upgrade `microdrop-launcher` package if there is a new version available.
     print 'Checking for `microdrop-launcher` updates',
     upgrade_info = auto_upgrade('microdrop-launcher')
     if upgrade_info['new_version']:

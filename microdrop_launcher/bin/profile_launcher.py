@@ -14,7 +14,6 @@ import path_helpers as ph
 import pygtkhelpers.ui.dialogs as gd
 import yaml
 
-from ..auto_upgrade import auto_upgrade
 from ..dirs import AppDirs
 from ..config import create_config_directory
 from ..profile import (ICON_PATH, SAVED_COLUMNS, drop_version_errors,
@@ -22,6 +21,8 @@ from ..profile import (ICON_PATH, SAVED_COLUMNS, drop_version_errors,
                        installed_major_version, launch_profile,
                        load_profiles_info, profile_major_version,
                        verify_or_create_profile_version)
+
+logger = logging.getLogger(__name__)
 
 
 class LaunchDialog(object):
@@ -345,11 +346,21 @@ def main():
     # Look up major version of each profile.
     df_profiles['major_version'] = df_profiles.path.map(profile_major_version)
 
-    # Upgrade `microdrop-launcher` package in background.
+    # Perform the following tasks in the background:
+    #
+    #  - Upgrade `microdrop-launcher` package
+    #  - Cache latest `microdrop` package version
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         def _auto_upgrade():
             process = sp.Popen([sys.executable, '-m',
                                 'microdrop_launcher.auto_upgrade'])
+
+            return process.communicate()
+
+        def _cache_latest_microdrop_version():
+            process = sp.Popen([sys.executable, '-m',
+                                'microdrop_launcher.microdrop_version'])
+
             return process.communicate()
 
         def _launch(args, df_profiles):
@@ -387,7 +398,9 @@ def main():
         futures = []
         if not args.no_upgrade:
             upgrade_future = executor.submit(_auto_upgrade)
-            futures.append(upgrade_future)
+            microdrop_version_future = \
+                executor.submit(_cache_latest_microdrop_version)
+            futures.extend([upgrade_future, microdrop_version_future])
         launch_future = executor.submit(_launch, args, df_profiles)
         futures.append(launch_future)
         concurrent.futures.wait(futures)

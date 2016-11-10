@@ -82,6 +82,12 @@ def conda_upgrade(package_name, match_major_version=False):
     ------
     pkg_resources.DistributionNotFound
         If package not installed.
+    IOError
+        If Conda executable not found in Conda environment.
+    subprocess.CalledProcessError
+        If `conda search` command fails (in Conda environment).
+
+        This happens, for example, if no internet connection is available.
 
     See also
     --------

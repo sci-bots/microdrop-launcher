@@ -7,6 +7,9 @@ import sys
 import path_helpers as ph
 
 
+f_major_version = lambda v: int(v.split('.')[0])
+
+
 def conda_prefix():
     '''
     Returns
@@ -105,7 +108,6 @@ def conda_upgrade(package_name, match_major_version=False):
         raise pkg_resources.DistributionNotFound(package_name, [])
 
     if match_major_version:
-        f_major_version = lambda v: int(v.split('.')[0])
         installed_major_version = f_major_version(version_info['installed'])
         latest_version = filter(lambda v: f_major_version(v) ==
                                 installed_major_version,

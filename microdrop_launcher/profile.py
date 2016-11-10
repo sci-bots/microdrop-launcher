@@ -315,6 +315,8 @@ def launch_profile(profile_path):
     '''
     # `pkg_resources.DistributionNotFound` raised if package not installed.
     installed_version = pkg_resources.get_distribution('microdrop').version
+    # Strip `.dev*` tag from version string.
+    installed_version = re.sub(r'\.dev[^\.]+$', '', installed_version)
 
     cached_path, cached_info = load_cached_version()
     latest_version = cached_info.get('version')

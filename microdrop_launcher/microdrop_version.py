@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 def cache_microdrop_version():
     '''
+    .. versionadded:: 0.2.post7
+
      1. Look up latest version of MicroDrop Conda package.
      2. If latest version not cached in
         `<microdrop_env_dirs.user_config_dir>/latest-version.yml`,
@@ -54,6 +56,8 @@ def cache_microdrop_version():
 
 def load_cached_version():
     '''
+    .. versionadded:: 0.2.post9
+
     Returns
     -------
     (cached_path, cached_info) : (str, dict)

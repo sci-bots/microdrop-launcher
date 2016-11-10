@@ -1,4 +1,5 @@
 import logging
+import pkg_resources
 import subprocess as sp
 
 import yaml
@@ -32,47 +33,72 @@ def cache_microdrop_version():
         # is available.
         return
     else:
-        installed_major_version = f_major_version(version_info
-                                                    ['installed'])
+        installed_major_version = f_major_version(version_info['installed'])
         latest_version = filter(lambda v: f_major_version(v) ==
                                 installed_major_version,
                                 version_info['versions'])[-1]
-        # Look up MicroDrop application directories based on major
-        # version.
-        microdrop_env_dirs = AppDirs('MicroDrop', version='{}.0'
-                                     .format(installed_major_version))
-        # Construct path to cached latest version info.
-        cached_version_path = (microdrop_env_dirs.user_config_dir
-                                .joinpath('latest-version.yml'))
 
-        cached_version_info = {}
+        cached_path, cached_info = load_cached_version()
 
-        # Load cached version as a dictionary, (at least) including:
-        #
-        #  - `'version'` (str): A `microdrop` package version specifier.
-        if cached_version_path.isfile():
-            try:
-                with cached_version_path.open('r') as input_:
-                    cached_version_info = yaml.load(input_.read())
-                    assert(isinstance(cached_version_info, dict))
-            except:
-                # Assume corrupted cached version file.
-                try:
-                    # Delete corrupted cached version file.
-                    cached_version_path.remove()
-                except:
-                    # Nothing more we can do if removal fails.
-                    logger.error('Could not delete malformed.', exc_info=True)
-
-        if latest_version != cached_version_info.get('version'):
+        if latest_version != cached_info.get('version'):
             # Write latest version to file.
             try:
-                with cached_version_path.open('w') as output:
-                    cached_version_info = {'version': latest_version}
-                    yaml.dump(cached_version_info, stream=output)
+                with cached_path.open('w') as output:
+                    cached_info = {'version': latest_version}
+                    yaml.dump(cached_info, stream=output)
+                print ('new version available: MicroDrop v{}'
+                       .format(latest_version))
             except:
                 logger.error('Error caching latest version.', exc_info=True)
 
 
+def load_cached_version():
+    '''
+    Returns
+    -------
+    (cached_path, cached_info) : (str, dict)
+        Where:
+         - :data:`cached_path` is the path to the file containing cached
+           MicroDrop version info.
+         - :data:`cached_info` is a dictionary that MAY contain a string
+           version specifier with the key ``version``, and MAY also contain a
+           boolean value with the key ``ignore``.  If ``ignore`` is set to
+           ``True``, user should not be prompted to upgrade to the version.
+    '''
+    # `pkg_resources.DistributionNotFound` raised if package not installed.
+    version = pkg_resources.get_distribution('microdrop').version
+    major_version = f_major_version(version)
+
+    # Look up MicroDrop application directories based on major
+    # version.
+    microdrop_env_dirs = AppDirs('MicroDrop', version='{}.0'
+                                 .format(major_version))
+    # Construct path to cached latest version info.
+    cached_version_path = (microdrop_env_dirs.user_config_dir
+                           .joinpath('latest-version.yml'))
+
+    cached_version_info = {}
+
+    # Load cached version as a dictionary, (at least) including:
+    #
+    #  - `'version'` (str): A `microdrop` package version specifier.
+    if cached_version_path.isfile():
+        try:
+            with cached_version_path.open('r') as input_:
+                cached_version_info = yaml.load(input_.read())
+                assert(isinstance(cached_version_info, dict))
+        except:
+            # Assume corrupted cached version file.
+            try:
+                # Delete corrupted cached version file.
+                cached_version_path.remove()
+            except:
+                # Nothing more we can do if removal fails.
+                logger.error('Could not delete malformed.', exc_info=True)
+    return cached_version_path, cached_version_info
+
+
 if __name__ == '__main__':
+    print 'Caching the latest version number of MicroDrop available.'
+    print '    ',
     cache_microdrop_version()

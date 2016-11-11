@@ -10,12 +10,44 @@ import path_helpers as ph
 f_major_version = lambda v: int(v.split('.')[0])
 
 
+def conda_activate_command():
+    '''
+    .. versionadded:: 0.3.post2
+
+    Returns
+    -------
+    list
+        Command list to activate Conda environment.
+
+        Can be prepended to a command list to run the command in the activated
+        Conda environment corresponding to the running Python executable.
+    '''
+    prefix = conda_prefix()
+    return ['call', r'{prefix}\Scripts\activate.bat' .format(prefix=prefix),
+            prefix]
+
+
+def conda_root():
+    '''
+    .. versionadded:: 0.3.post2
+
+    Returns
+    -------
+    path_helpers.path
+        Path to Conda **root** environment.
+    '''
+    return ph.path(sp.check_output(conda_activate_command() +
+                                   ['&', 'conda', 'info', '--root'],
+                                   shell=True).strip())
+
+
 def conda_prefix():
     '''
     Returns
     -------
     path_helpers.path
-        Path to Conda environment prefix.
+        Path to Conda environment prefix corresponding to running Python
+        executable.
 
         Return ``None`` if not running in a Conda environment.
     '''
@@ -59,6 +91,9 @@ def conda_upgrade(package_name, match_major_version=False):
 
     .. versionchanged:: 0.2.post6
         Add optional :data:`match_major_version` parameter.
+
+    .. versionchanged:: 0.3.post2
+        Add support for running in Conda environments.
 
     Parameters
     ----------
@@ -126,10 +161,10 @@ def conda_upgrade(package_name, match_major_version=False):
         return result
 
     # Running in a Conda environment.
-    conda_exe = conda_executable()
-    process = sp.Popen([conda_exe, 'install', '-y',
+    process = sp.Popen(conda_activate_command() +
+                       ['&', 'conda', 'install', '-y',
                         '{}=={}'.format(package_name, latest_version)],
-                       stdout=sp.PIPE, stderr=sp.STDOUT)
+                       shell=True, stdout=sp.PIPE, stderr=sp.STDOUT)
     lines = []
     ostream = sys.stdout
 
@@ -167,6 +202,9 @@ def conda_version_info(package_name):
     '''
     .. versionadded:: 0.2.post5
 
+    .. versionchanged:: 0.3.post2
+        Add support for running in Conda environments.
+
     Parameters
     ----------
     package_name : str
@@ -189,10 +227,12 @@ def conda_version_info(package_name):
 
         This happens, for example, if no internet connection is available.
     '''
-    conda_exe = conda_executable()
     # Use `-f` flag to search for package, but *no other packages that have
     # `<package_name>` in the name).
-    output = sp.check_output([conda_exe, 'search', '-f', package_name])
+    output = sp.check_output(conda_activate_command() +
+                             ['&', 'conda', 'search', '-c',
+                              'wheeler-microfluidics', '-f', package_name],
+                             shell=True)
 
     output_lines = output.strip().splitlines()
 

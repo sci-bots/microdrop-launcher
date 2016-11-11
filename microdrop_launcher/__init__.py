@@ -95,6 +95,9 @@ def conda_upgrade(package_name, match_major_version=False):
     .. versionchanged:: 0.3.post2
         Add support for running in Conda environments.
 
+    .. versionchanged:: 0.3.post3
+        Explictly set `wheeler-microfluidics` channel for install operations.
+
     Parameters
     ----------
     package_name : str
@@ -162,8 +165,8 @@ def conda_upgrade(package_name, match_major_version=False):
 
     # Running in a Conda environment.
     process = sp.Popen(conda_activate_command() +
-                       ['&', 'conda', 'install', '-y',
-                        '{}=={}'.format(package_name, latest_version)],
+                       ['&', 'conda', 'install', '-c', 'wheeler-microfluidics',
+                        '-y', '{}=={}'.format(package_name, latest_version)],
                        shell=True, stdout=sp.PIPE, stderr=sp.STDOUT)
     lines = []
     ostream = sys.stdout

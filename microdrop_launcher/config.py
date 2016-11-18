@@ -18,11 +18,11 @@ REM Change into [parent directory of batch file][1].
 REM
 REM [1]: http://stackoverflow.com/questions/16623780/how-to-get-windows-batchs-parent-folder
 cd "%~dp0"
-REM Launch Microdrop
+REM Launch MicroDrop
 "{{ py_exe }}" -m microdrop.microdrop -c "%~dp0microdrop.ini"
 '''
 
-# Microdrop configuration file template.
+# MicroDrop configuration file template.
 config_template = '''
 data_dir = .
 [plugins]
@@ -185,11 +185,11 @@ def create_config_directory_with_paths(output_directory, paths_ini_path=None,
 
 def create_config_directory(output_dir, overwrite=False):
     '''
-    Initialize output directory with minimal Microdrop configuration.
+    Initialize output directory with minimal MicroDrop configuration.
 
-    The created configuration causes Microdrop to store plugins and device
+    The created configuration causes MicroDrop to store plugins and device
     files within the configuration directory.  A batch file `microdrop.bat` is
-    also created in the directory to launch Microdrop using the configuration.
+    also created in the directory to launch MicroDrop using the configuration.
     Note that the ``microdrop.bat`` can be launched within any working directory.
 
     Parameters
@@ -248,7 +248,7 @@ def create_config_directory(output_dir, overwrite=False):
 
 def replace_config_directory(config_directory, backup=True):
     '''
-    Replace existing Microdrop configuration directory with newly initialized
+    Replace existing MicroDrop configuration directory with newly initialized
     configuration.
 
     Directory paths from existing configuration will be copied to new
@@ -261,7 +261,7 @@ def replace_config_directory(config_directory, backup=True):
     Parameters
     ----------
     config_directory : str
-        Path to existing Microdrop configuration directory.
+        Path to existing MicroDrop configuration directory.
     backup : True
         If ``True``, existing directory will be renamed with timestamp suffix.
         Otherwise, the existing directory will be **deleted**.

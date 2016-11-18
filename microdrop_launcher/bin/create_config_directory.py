@@ -1,5 +1,5 @@
 '''
-Create Microdrop configuration directory.
+Create MicroDrop configuration directory.
 
 If output directory already exists, rename directory and offer to move existing
 `devices` directory (containing experiment logs).

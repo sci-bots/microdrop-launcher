@@ -8,14 +8,14 @@ import pythoncom
 def create_microdrop_shortcut(target_path, name, description=None,
                               overwrite=False, icon=None):
     '''
-    Create desktop shortcut with Microdrop version.
+    Create desktop shortcut with MicroDrop version.
 
     Args
     ----
 
-        batch_path (str) : Path to Microdrop launch batch file.
+        batch_path (str) : Path to MicroDrop launch batch file.
     '''
-    # Look up Microdrop major version.
+    # Look up MicroDrop major version.
     microdrop_dist = pkg_resources.get_distribution('microdrop')
     major_version = '.'.join(microdrop_dist.version.split('.')[:2])
 

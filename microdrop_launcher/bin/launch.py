@@ -23,7 +23,7 @@ def parse_args(args=None):
     if args is None:
         args = sys.argv
 
-    parser = argparse.ArgumentParser(description='Microdrop launcher',
+    parser = argparse.ArgumentParser(description='MicroDrop launcher',
                                      parents=[INSTALL_REQUIREMENTS_PARSER])
     parser.add_argument('--install-plugin-requirements', action='store_true')
     parser.add_argument('--no-upgrade', action='store_true',

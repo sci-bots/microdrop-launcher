@@ -35,7 +35,13 @@ def cache_microdrop_version():
         # is available.
         return
     else:
-        installed_major_version = f_major_version(version_info['installed'])
+        installed_info = version_info['installed']
+        if not installed_info:
+            # No `microdrop` Conda package found.
+            # XXX This also happens if `microdrop` is installed using `conda
+            # develop`.
+            return
+        installed_major_version = f_major_version()
         latest_version = filter(lambda v: f_major_version(v) ==
                                 installed_major_version,
                                 version_info['versions'])[-1]

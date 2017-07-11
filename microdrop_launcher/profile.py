@@ -18,7 +18,6 @@ except ImportError:
     GUI_AVAILABLE = False
 else:
     GUI_AVAILABLE = True
-    from pygtkhelpers.ui.views.command_textview import get_run_command_dialog
 
 from . import conda_prefix
 from .auto_upgrade import auto_upgrade

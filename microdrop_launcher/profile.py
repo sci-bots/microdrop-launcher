@@ -72,7 +72,13 @@ def load_profiles_info(profiles_path):
     if profiles_path.exists():
         with profiles_path.open('r') as input_:
             profiles_str = input_.read()
-            profiles = yaml.load(profiles_str)
+            try:
+                profiles = [profile_i for profile_i in yaml.load(profiles_str)
+                            if ph.path(profile_i['path']).isdir()]
+            except:
+                logger.error('Error reading list of profiles from `%s`.',
+                             profiles_path, exc_info=True)
+                profiles = []
     else:
         profiles = []
 
@@ -416,9 +422,6 @@ def import_profile(df_profiles, profile_path, parent=None):
         profile.
     '''
     verify_or_create_profile_version(profile_path)
-    plugins_directory = (mpm.commands
-                         .get_plugins_directory(microdrop_user_root=
-                                                profile_path))
     major_version = profile_major_version(profile_path)
     df_profiles = df_profiles.append({'path': profile_path,
                                       'major_version': major_version},

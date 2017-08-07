@@ -307,6 +307,9 @@ def launch_profile(profile_path):
         installed version, prompt user to offer to upgrade.
      2. Launch MicroDrop using specified profile path.
 
+    .. versionchanged:: 0.7.2
+       Launch MicroDrop in an **activated** Conda environment.
+
     Parameters
     ----------
     profile_path : str

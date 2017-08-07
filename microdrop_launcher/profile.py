@@ -6,6 +6,7 @@ import re
 import subprocess as sp
 import sys
 
+import conda_helpers as ch
 import mpm
 import mpm.commands
 import mpm.bin
@@ -19,7 +20,6 @@ except ImportError:
 else:
     GUI_AVAILABLE = True
 
-from . import conda_prefix
 from .auto_upgrade import auto_upgrade
 from .config import create_config_directory
 from .microdrop_version import load_cached_version
@@ -290,9 +290,9 @@ def environment_prompt(profile_path):
 
     # Launch command prompt
     if platform.system() == 'Windows':
-        if conda_prefix() is not None:
+        if ch.conda_prefix() is not None:
             command = (r'start cmd "/K" {prefix}\Scripts\activate.bat {prefix}'
-                       .format(prefix=conda_prefix()))
+                       .format(prefix=ch.conda_prefix()))
         else:
             command = r'start cmd'
         sp.call(command, shell=True, cwd=str(profile_path), env=env)
@@ -366,8 +366,7 @@ def launch_profile(profile_path):
     # installed MicroDrop package **match**.
     original_directory = ph.path(os.getcwd())
     try:
-        # Change directory into the parent directory of the configuration
-        # file.
+        # Change directory into the parent directory of the configuration file.
         os.chdir(config_file.parent)
         return_code = None
         env = os.environ.copy()
@@ -376,8 +375,16 @@ def launch_profile(profile_path):
         # Return code of `5` indicates program should be restarted.
         while return_code is None or return_code == 5:
             # Launch MicroDrop and save return code.
-            return_code = sp.call([sys.executable, '-m', 'microdrop.microdrop',
-                                   '-c', config_file], env=env)
+            #
+            # XXX Use `conda_activate_command` to launch MicroDrop in an
+            # **activated** Conda environment.  See [issue #10][i10].
+            #
+            # [i10]: https://github.com/wheeler-microfluidics/microdrop-launcher/issues/10
+            command = (ch.conda_activate_command() + ['&', sys.executable,
+                                                      '-m',
+                                                      'microdrop.microdrop',
+                                                      '-c', config_file])
+            return_code = sp.call(command, env=env, shell=True)
     finally:
         # Restore original working directory.
         os.chdir(original_directory)

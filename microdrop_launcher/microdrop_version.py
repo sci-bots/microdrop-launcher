@@ -119,6 +119,12 @@ def load_cached_version():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+
     print 'Caching the latest version number of MicroDrop available.'
     print '    ',
-    cache_microdrop_version()
+    try:
+        cache_microdrop_version()
+    except:
+        logger.debug('Error looking up latest MicroDrop version.',
+                     exc_info=True)

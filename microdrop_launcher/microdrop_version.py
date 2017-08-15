@@ -50,24 +50,45 @@ def cache_microdrop_version():
         installed_major_version = f_major_version(installed_info['version'])
         # Find latest version of MicroDrop with the same **major version
         # number** as the installed version.
-        latest_version = filter(lambda v: f_major_version(v['version']) ==
-                                installed_major_version,
-                                version_info['versions'])[-1]
+        latest_info = filter(lambda v: f_major_version(v['version']) ==
+                             installed_major_version,
+                             version_info['versions'])[-1]
 
         # Load cached version information (or empty dictionary if no cached
         # info is available).
         cached_path, cached_info = load_cached_version()
 
-        if latest_version != cached_info.get('version'):
+        if 'version' in latest_info:
             # Write latest version to file.
-            try:
-                with cached_path.open('w') as output:
-                    cached_info = {'version': latest_version}
-                    yaml.dump(cached_info, stream=output)
-                print ('new version available: MicroDrop v{}'
-                       .format(latest_version))
-            except:
-                logger.error('Error caching latest version.', exc_info=True)
+            latest_version = latest_info['version']
+            if (pkg_resources.parse_version(installed_info['version']) <
+                pkg_resources.parse_version(latest_version)):
+                # A new version of MicroDrop is available.
+                logger.info('new version available: MicroDrop v%s (installed '
+                            'version: v%s)', latest_version,
+                            installed_info['version'])
+            elif (pkg_resources.parse_version(installed_info['version']) >
+                  pkg_resources.parse_version(latest_version)):
+                # Installed version of MicroDrop is newer than all available
+                # versions on Conda channels.
+                logger.info('Installed version of MicroDrop (v%s) is newer '
+                            'than latest version on Conda channels (v%s)',
+                            installed_info['version'], latest_version)
+            else:
+                # Latest available version of MicroDrop is installed.
+                logger.info('The latest version of MicroDrop (v%s) is '
+                            'installed.', installed_info['version'])
+
+            if (latest_info['version'] != cached_info.get('version')):
+                try:
+                    with cached_path.open('w') as output:
+                        cached_info = {'version': latest_version}
+                        yaml.dump(cached_info, stream=output)
+                    logger.debug('wrote version info for MicroDrop v%s to %s',
+                                 latest_version, cached_path)
+                except:
+                    logger.error('Error caching latest version.',
+                                 exc_info=True)
 
 
 def load_cached_version():
@@ -119,9 +140,9 @@ def load_cached_version():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
-    print 'Caching the latest version number of MicroDrop available.'
+    logging.info('Caching the latest version number of MicroDrop available.')
     print '    ',
     try:
         cache_microdrop_version()

@@ -1,9 +1,11 @@
+import json
 import os
 import pkg_resources
 import re
 import subprocess as sp
 import sys
 
+import conda_helpers as ch
 import path_helpers as ph
 
 
@@ -208,6 +210,12 @@ def conda_version_info(package_name):
     .. versionchanged:: 0.3.post2
         Add support for running in Conda environments.
 
+    .. versionchanged:: 0.7.3
+        Use :func:`conda_helpers.conda_exec` to search for available MicroDrop
+        Conda packages.
+
+        Add ``sci-bots`` Anaconda channel to Conda package search.
+
     Parameters
     ----------
     package_name : str
@@ -232,19 +240,9 @@ def conda_version_info(package_name):
     '''
     # Use `-f` flag to search for package, but *no other packages that have
     # `<package_name>` in the name).
-    output = sp.check_output(conda_activate_command() +
-                             ['&', 'conda', 'search', '-c',
-                              'wheeler-microfluidics', '-f', package_name],
-                             shell=True)
-
-    output_lines = output.strip().splitlines()
-
-    line_tokens = [re.split(r'\s+', v) for v in output_lines[1:]]
-    versions = [tokens_i[2] if tokens_i[1] in ('*', '.') else tokens_i[1]
-                for tokens_i in line_tokens]
-
-    installed_indexes = [i for i, tokens_i in enumerate(line_tokens)
-                         if tokens_i[1] == '*']
-    installed_version = (None if not installed_indexes
-                         else versions[installed_indexes[0]])
+    json_output = ch.conda_exec('search', '-c', 'wheeler-microfluidics', '-f',
+                                'microdrop', '--json')
+    versions = json.loads(json_output)['microdrop']
+    installed_versions = [v_i for v_i in versions if v_i['installed']]
+    installed_version = installed_versions[0] if installed_versions else None
     return {'installed': installed_version, 'versions': versions}

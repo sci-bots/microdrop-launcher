@@ -243,7 +243,7 @@ def conda_version_info(package_name):
     json_output = ch.conda_exec('search', '-c', 'sci-bots', '-c',
                                 'wheeler-microfluidics', '-f', 'microdrop',
                                 '--json', verbose=False)
-    versions = json.loads(json_output)['microdrop'])
+    versions = json.loads(json_output)['microdrop']
     installed_versions = [v_i for v_i in versions if v_i['installed']]
     installed_version = installed_versions[0] if installed_versions else None
     return {'installed': installed_version, 'versions': versions}

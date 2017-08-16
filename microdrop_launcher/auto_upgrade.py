@@ -33,6 +33,11 @@ def main():
 
     .. versionchanged:: 0.7.5
         Use Conda install dry-run to check for new version.
+
+    .. versionchanged:: 0.7.6
+        Fix displayed package name during upgrade.
+
+        Fail gracefully with warning on JSON decode error.
     '''
     # Upgrade `microdrop-launcher` package if there is a new version available.
     print 'Checking for `microdrop-launcher` updates',
@@ -51,17 +56,29 @@ def main():
         else:
             print 'Error checking for updates.\n{}'.format(exception)
     else:
-        if dry_run_linked and [package_i
-                               for package_i, channel_i in dry_run_linked
-                               if 'microdrop-launcher' ==
-                               package_i.split('==')[0]]:
+        # Try to find package specifier for new version of
+        # `midrodrop-launcher`.
+        # **N.B.**, `dry_run_linked` will be `None` if there is no new version.
+        launcher_packages = [package_i for package_i, channel_i in
+                             (dry_run_linked or [])
+                             if 'microdrop-launcher' ==
+                             package_i.split('==')[0]]
+        if dry_run_linked and launcher_packages:
             # A new version of the launcher is available for installation.
-            print 'Upgrading to:', package_i
+            print 'Upgrading to:', launcher_packages[0]
             install_log_json = ch.conda_exec('install', '--json',
                                              'microdrop-launcher',
                                              verbose=False)
             install_log_json = _strip_conda_menuinst_messages(install_log_json)
-            install_response = json.loads(install_log_json)
+            try:
+                install_response = json.loads(install_log_json)
+            except ValueError:
+                # Error decoding JSON response.
+                # XXX Assume install succeeded.
+                print ('Warning: could not decode `microdrop-launcher` install'
+                       ' log:')
+                print install_log_json
+                return
             unlinked, linked = ch.install_info(install_response)
             print 'Uninstall:'
             print '\n'.join(' - `{} (from {})`'.format(package_i, channel_i)

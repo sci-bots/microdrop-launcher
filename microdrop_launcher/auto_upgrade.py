@@ -52,6 +52,10 @@ def main():
         Fix displayed package name during upgrade.
 
         Fail gracefully with warning on JSON decode error.
+
+    .. versionchanged:: 0.7.7
+        Strip progress messages from Conda install output log to prevent JSON
+        decoding errors.
     '''
     # Upgrade `microdrop-launcher` package if there is a new version available.
     print 'Checking for `microdrop-launcher` updates',

@@ -1,56 +1,30 @@
+import json
 import logging
 
 import pip_helpers as pih
 
-from . import conda_prefix, conda_upgrade
+import conda_helpers as ch
 
 
 logger = logging.getLogger(__name__)
 
 
-def auto_upgrade(package_name, match_major_version=False):
+def _strip_conda_menuinst_messages(conda_output):
     '''
-    Upgrade package.
+    Strip away Conda menuinst log messages to work around [issue with
+    `menuinst`][0].
 
-    .. versionadded:: 0.1.post43
+    For example:
 
-    .. versionchanged:: 0.2.post6
-        Add optional :data:`match_major_version` parameter.
+        INFO menuinst_win32:__init__(182): Menu: name: 'MicroDrop', prefix: 'C:\Users\chris\Miniconda2\envs\dropbot.py', env_name: 'dropbot.py', mode: 'None', used_mode: 'user'
 
-    Parameters
-    ----------
-    package_name : str
-        Package name.
-    match_major_version : bool,optional
-        Only upgrade to versions within the same major version.
+    See [here][1] for more information.
 
-    Returns
-    -------
-    dict
-        Dictionary containing:
-         - :data:`original_version`: Package version before upgrade.
-         - :data:`new_version`: Package version after upgrade (`None` if
-           package was not upgraded).
-         - :data:`installed_dependencies`: List of dependencies installed
-           during package upgrade.  Each dependency is represented as a
-           dictionary of the form ``{'package': ..., 'version': ...}``.
+    [0]: https://github.com/ContinuumIO/menuinst/issues/49
+    [1]: https://groups.google.com/a/continuum.io/forum/#!topic/anaconda/RWs9of4I2KM
     '''
-    try:
-        if conda_prefix():
-            result = conda_upgrade(package_name, match_major_version)
-        else:
-            result = pih.upgrade(package_name)
-        if result['new_version']:
-            logger.info('Upgraded %s: %s->%s', result['package'],
-                        result['original_version'], result['new_version'])
-        else:
-            logger.info('%s up to date: %s', result['package'],
-                        result['original_version'])
-        return result
-    except Exception, exception:
-        logger.debug('Error upgrading:\n%s', exception)
-        return {'original_version': None, 'new_version': None,
-                'installed_dependencies': []}
+    return '\n'.join(line_i for line_i in conda_output.splitlines()
+                     if not line_i.startswith('INFO'))
 
 
 def main():
@@ -59,16 +33,47 @@ def main():
     '''
     # Upgrade `microdrop-launcher` package if there is a new version available.
     print 'Checking for `microdrop-launcher` updates',
-    upgrade_info = auto_upgrade('microdrop-launcher')
-    if upgrade_info['new_version']:
-        print 'Upgraded to:', upgrade_info['new_version']
-    elif upgrade_info['original_version'] is None:
-        print 'Error checking for updates (offline?)'
+
+    # Check if new version of `microdrop-launcher` would be installed.
+    dry_run_response = json.loads(ch.conda_exec('install', '--dry-run',
+                                                '--json',
+                                                'microdrop-launcher',
+                                                verbose=False))
+    try:
+        dry_run_unlinked, dry_run_linked = ch.install_info(dry_run_response)
+    except RuntimeError, exception:
+        if 'CondaHTTPError' in str(exception):
+            print 'Error checking for updates - no network connection'
+            return
+        else:
+            print 'Error checking for updates.\n{}'.format(exception)
     else:
-        print ('Up to date: microdrop-launcher=={}'
-               .format(upgrade_info['original_version']))
+        if dry_run_linked and [package_i
+                               for package_i, channel_i in dry_run_linked
+                               if 'microdrop-launcher' ==
+                               package_i.split('==')[0]]:
+            # A new version of the launcher is available for installation.
+            print 'Upgrading to:', package_i
+            install_log_json = ch.conda_exec('install', '--json',
+                                             'microdrop-launcher',
+                                             verbose=False)
+            install_log_json = _strip_conda_menuinst_messages(install_log_json)
+            install_response = json.loads(install_log_json)
+            unlinked, linked = ch.install_info(install_response)
+            print 'Uninstall:'
+            print '\n'.join(' - `{} (from {})`'.format(package_i, channel_i)
+                            for package_i, channel_i in unlinked)
+            print ''
+            print 'Install:'
+            print '\n'.join(' - `{} (from {})`'.format(package_i, channel_i)
+                            for package_i, channel_i in linked)
+        else:
+            # No new version of the launcher is available for installation.
+            print ('Up to date: {}'
+                   .format(ch.package_version('microdrop-launcher',
+                                              verbose=False)
+                           .get('dist_name')))
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
     main()

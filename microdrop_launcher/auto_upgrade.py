@@ -65,7 +65,15 @@ def main():
                                              'microdrop-launcher',
                                              verbose=False)
             install_log_json = _strip_conda_menuinst_messages(install_log_json)
-            install_response = json.loads(install_log_json)
+            try:
+                install_response = json.loads(install_log_json)
+            except ValueError:
+                # Error decoding JSON response.
+                # XXX Assume install succeeded.
+                print ('Warning: could not decode `microdrop-launcher` install'
+                       ' log:')
+                print install_log_json
+                return
             unlinked, linked = ch.install_info(install_response)
             print 'Uninstall:'
             print '\n'.join(' - `{} (from {})`'.format(package_i, channel_i)

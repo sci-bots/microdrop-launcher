@@ -33,6 +33,11 @@ def main():
 
     .. versionchanged:: 0.7.5
         Use Conda install dry-run to check for new version.
+
+    .. versionchanged:: 0.7.6
+        Fix displayed package name during upgrade.
+
+        Fail gracefully with warning on JSON decode error.
     '''
     # Upgrade `microdrop-launcher` package if there is a new version available.
     print 'Checking for `microdrop-launcher` updates',

@@ -24,7 +24,21 @@ def _strip_conda_menuinst_messages(conda_output):
     [1]: https://groups.google.com/a/continuum.io/forum/#!topic/anaconda/RWs9of4I2KM
     '''
     return '\n'.join(line_i for line_i in conda_output.splitlines()
-                     if not line_i.startswith('INFO'))
+                     if not line_i.strip().startswith('INFO'))
+
+
+def _strip_progress_messages(conda_output):
+    '''
+    Strip progress messages from Conda install output log.
+
+    For example:
+
+        {"maxval": 133256, "finished": false, "fetch": "microdrop-laun", "progress": 0}
+    '''
+    cre_json_progress = re.compile(r'{"maxval":[^,]+,\s+"finished":[^,]+,'
+                                   r'\s+"fetch":\s+[^,]+,\s+"progress":[^}]+}')
+    return '\n'.join(line_i for line_i in conda_output.splitlines()
+                     if not cre_json_progress.search(line_i))
 
 
 def main():
@@ -67,7 +81,7 @@ def main():
             # A new version of the launcher is available for installation.
             print 'Upgrading to:', launcher_packages[0]
             install_log_json = ch.conda_exec('install', '--json',
-                                             'microdrop-launcher',
+                                             'microdrop-launcher', '--quiet',
                                              verbose=False)
             install_log_json = _strip_conda_menuinst_messages(install_log_json)
             try:

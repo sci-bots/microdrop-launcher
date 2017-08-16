@@ -30,6 +30,9 @@ def _strip_conda_menuinst_messages(conda_output):
 def main():
     '''
     .. versionadded:: 0.1.post62
+
+    .. versionchanged:: 0.7.5
+        Use Conda install dry-run to check for new version.
     '''
     # Upgrade `microdrop-launcher` package if there is a new version available.
     print 'Checking for `microdrop-launcher` updates',

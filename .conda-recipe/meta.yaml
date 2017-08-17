@@ -19,6 +19,7 @@ requirements:
   build:
     - python 2.7*
     - appdirs
+    - conda-helpers >=0.9
     - futures
     - jinja2
     - microdrop-plugin-manager >=0.20.2
@@ -29,6 +30,7 @@ requirements:
 
   run:
     - appdirs
+    - conda-helpers >=0.9
     - futures
     - jinja2
     - microdrop-plugin-manager >=0.20.2

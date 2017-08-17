@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import pkg_resources
@@ -20,7 +21,6 @@ except ImportError:
 else:
     GUI_AVAILABLE = True
 
-from .auto_upgrade import auto_upgrade
 from .config import create_config_directory
 from .microdrop_version import load_cached_version
 
@@ -37,6 +37,84 @@ SAVED_COLUMNS = ['used_timestamp', 'path']
 
 class VersionError(RuntimeError):
     pass
+
+
+def check_version_cache_for_upgrade():
+    '''
+    Prompt user to offer to upgrade if cached latest MicroDrop version is newer
+    than currently installed version.
+
+    .. versionadded:: 0.7.8
+    '''
+    # Get currently installed `microdrop` package information.
+    #
+    # Example `installed_info`:
+    #
+    #     {u'base_url': None,
+    #      u'build_number': 0,
+    #      u'build_string': u'0',
+    #      u'channel': u'sci-bots',
+    #      u'dist_name': u'microdrop-2.10.2-0',
+    #      u'name': u'microdrop',
+    #      u'platform': None,
+    #      u'version': u'2.10.2',
+    #      u'with_features_depends': None}
+    try:
+        installed_info = ch.package_version('microdrop', verbose=False)
+    except NameError:
+        # Installed MicroDrop Conda package not found (perhaps this is a
+        # development environment?)
+        return
+
+    cached_path, cached_info = load_cached_version()
+    latest_version = cached_info.get('version')
+    installed_version = installed_info.get('version')
+
+    # If cached latest MicroDrop version is more recent than the currently
+    # installed version, prompt user to offer to upgrade.
+    if all([GUI_AVAILABLE, not cached_info.get('ignore'),
+            latest_version is not None,
+            pkg_resources.parse_version(latest_version) >
+            pkg_resources.parse_version(installed_version)]):
+        # Display dialog.
+        dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
+        dialog.set_icon_from_file(ICON_PATH)
+        dialog.set_title('Upgrade to MicroDrop v{}'.format(latest_version))
+        dialog.add_buttons(gtk.STOCK_YES, gtk.RESPONSE_YES,
+                           "Not now", gtk.RESPONSE_NO,
+                           "Never", gtk.RESPONSE_CANCEL)
+        dialog.set_markup('A new version of MicroDrop is available.\n\n'
+                          'Would you like to upgrade to MicroDrop v{} (current'
+                          ' version: v{})?'.format(latest_version,
+                                                   installed_version))
+        response = dialog.run()
+        dialog.destroy()
+
+        if response == gtk.RESPONSE_CANCEL:
+            # Ignore this specific version from now on.
+            try:
+                with cached_path.open('w') as output:
+                    cached_info = {'version': latest_version, 'ignore': True}
+                    yaml.dump(cached_info, stream=output)
+                print ('new version available: MicroDrop v{} (not installing '
+                       'now)'.format(latest_version))
+            except:
+                logger.error('Error caching latest version.', exc_info=True)
+        elif response == gtk.RESPONSE_YES:
+            # User selected `Yes`, so upgrade MicroDrop, but restrict upgrade
+            # to within the same major version.
+            try:
+                major_version = int(cre_version.match(installed_version)
+                                    .group('major'))
+                install_log_json = ch.conda_exec('install', '--json',
+                                                 'microdrop >={}, <{}'
+                                                 .format(major_version,
+                                                         major_version + 1))
+                install_response = json.loads(install_log_json)
+                unlinked, linked = ch.install_info(install_response)
+                print ch.format_install_info(unlinked, linked)
+            except:
+                logger.error('Error upgrading MicroDrop.', exc_info=True)
 
 
 def load_profiles_info(profiles_path):
@@ -303,8 +381,8 @@ def environment_prompt(profile_path):
 
 def launch_profile(profile_path):
     '''
-     1. If cached latest MicroDrop version is different from currently
-        installed version, prompt user to offer to upgrade.
+     1. If cached latest MicroDrop version is newer than currently installed
+        version, prompt user to offer to upgrade.
      2. Launch MicroDrop using specified profile path.
 
     .. versionchanged:: 0.7.2
@@ -320,45 +398,8 @@ def launch_profile(profile_path):
     int
         Exit code from MicroDrop program.
     '''
-    # `pkg_resources.DistributionNotFound` raised if package not installed.
-    installed_version = pkg_resources.get_distribution('microdrop').version
-    # Strip `.dev*` tag from version string.
-    installed_version = re.sub(r'\.dev[^\.]+$', '', installed_version)
-
-    cached_path, cached_info = load_cached_version()
-    latest_version = cached_info.get('version')
-
-    # If cached latest MicroDrop version is different from currently installed
-    # version, prompt user to offer to upgrade.
-    if all([GUI_AVAILABLE, not cached_info.get('ignore'),
-            latest_version is not None, installed_version != latest_version]):
-        dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
-        dialog.set_icon_from_file(ICON_PATH)
-        dialog.set_title('Upgrade to MicroDrop v{}'.format(latest_version))
-        dialog.add_buttons(gtk.STOCK_YES, gtk.RESPONSE_YES,
-                           "Not now", gtk.RESPONSE_NO,
-                           "Never", gtk.RESPONSE_CANCEL)
-        dialog.set_markup('A new version of MicroDrop is available.\n\n'
-                          'Would you like to upgrade to MicroDrop v{}?'
-                          .format(latest_version))
-        response = dialog.run()
-        dialog.destroy()
-        if response == gtk.RESPONSE_CANCEL:
-            # Ignore this specific version from now on.
-            try:
-                with cached_path.open('w') as output:
-                    cached_info = {'version': latest_version, 'ignore': True}
-                    yaml.dump(cached_info, stream=output)
-                print ('new version available: MicroDrop v{}'
-                       .format(latest_version))
-            except:
-                logger.error('Error caching latest version.', exc_info=True)
-        elif response == gtk.RESPONSE_YES:
-            # User selected `Yes`, so upgrade MicroDrop.
-            # **TODO** Somehow notify user of upgrade progress.
-            upgrade_info = auto_upgrade('microdrop', match_major_version=True)
-            if upgrade_info['new_version']:
-                print 'Upgraded to:', upgrade_info['new_version']
+    # Prompt user to upgrade MicroDrop if a newer version is available.
+    check_version_cache_for_upgrade()
 
     # Launch MicroDrop using specified profile path.
     profile_path = ph.path(profile_path)

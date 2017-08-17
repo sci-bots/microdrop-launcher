@@ -227,7 +227,8 @@ def conda_version_info(package_name):
         Version information:
 
          - ``latest``: Latest available version.
-         - ``installed``: Installed version (`None` if not installed).
+         - ``installed``: Conda package description dictionary for installed
+           version (`None` if not installed).
 
     Raises
     ------
@@ -246,4 +247,16 @@ def conda_version_info(package_name):
     versions = json.loads(json_output)['microdrop']
     installed_versions = [v_i for v_i in versions if v_i['installed']]
     installed_version = installed_versions[0] if installed_versions else None
+
+    if installed_version is None:
+        # If not able to find installed version from `microdrop` Conda package
+        # search, use `conda list ...` to try determine the installed version of
+        # MicroDrop.
+        try:
+            installed_version = ch.package_version('microdrop', verbose=False)
+        except NameError:
+            # Installed MicroDrop Conda package not found (perhaps this is a
+            # development environment?)
+            pass
+
     return {'installed': installed_version, 'versions': versions}

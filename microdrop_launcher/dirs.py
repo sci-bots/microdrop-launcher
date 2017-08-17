@@ -1,7 +1,7 @@
 import appdirs
 import path_helpers as ph
 
-from . import conda_prefix
+from conda_helpers import conda_prefix
 
 class AppDirs(appdirs.AppDirs):
     """Convenience wrapper for getting application dirs."""

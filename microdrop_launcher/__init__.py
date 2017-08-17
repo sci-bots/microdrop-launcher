@@ -25,6 +25,11 @@ def conda_version_info(package_name):
 
         Add ``sci-bots`` Anaconda channel to Conda package search.
 
+    .. versionchanged:: 0.7.8
+        Fall back to using ``conda list`` to search for the installed version
+        of MicroDrop if the version cannot be determined using ``conda
+        search``.
+
     Parameters
     ----------
     package_name : str

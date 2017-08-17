@@ -113,6 +113,11 @@ def check_version_cache_for_upgrade():
                 install_response = json.loads(install_log_json)
                 unlinked, linked = ch.install_info(install_response)
                 print ch.format_install_info(unlinked, linked)
+                try:
+                    # Remove stale cached MicroDrop version data.
+                    cached_path.remove()
+                except:
+                    pass
             except:
                 logger.error('Error upgrading MicroDrop.', exc_info=True)
 

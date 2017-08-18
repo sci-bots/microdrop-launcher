@@ -32,14 +32,7 @@ def cache_microdrop_version():
         # Try to look up available versions of MicroDrop from Conda channels
         # and which version is installed.
         version_info = conda_version_info('microdrop')
-    except IOError:
-        # Conda executable not found.
-        return
-    except sp.CalledProcessError:
-        # `conda search` command failed, e.g., no internet connection
-        # is available.
-        return
-    else:
+
         installed_info = version_info['installed']
         if not installed_info:
             # No `microdrop` Conda package found.
@@ -89,6 +82,20 @@ def cache_microdrop_version():
                 except:
                     logger.error('Error caching latest version.',
                                  exc_info=True)
+    except RuntimeError, exception:
+        if 'CondaHTTPError' in str(exception):
+            # Error accessing Conda server.
+            logger.warning('Could not connect to server.')
+            return
+        else:
+            logger.debug('Error checking MicroDrop version')
+    except IOError:
+        # Conda executable not found.
+        return
+    except sp.CalledProcessError:
+        # `conda search` command failed, e.g., no internet connection
+        # is available.
+        return
 
 
 def load_cached_version():

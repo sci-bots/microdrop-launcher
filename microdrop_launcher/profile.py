@@ -73,9 +73,10 @@ def check_version_cache_for_upgrade():
     # If cached latest MicroDrop version is more recent than the currently
     # installed version, prompt user to offer to upgrade.
     if all([GUI_AVAILABLE, not cached_info.get('ignore'),
-            latest_version is not None,
-            pkg_resources.parse_version(latest_version) >
-            pkg_resources.parse_version(installed_version)]):
+            latest_version is not None]):
+        if (pkg_resources.parse_version(latest_version) <=
+            pkg_resources.parse_version(installed_version)):
+            return
         # Display dialog.
         dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION)
         dialog.set_icon_from_file(ICON_PATH)

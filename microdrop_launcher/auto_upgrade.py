@@ -1,5 +1,7 @@
 import json
 import logging
+import re
+import sys
 
 import pip_helpers as pih
 
@@ -59,58 +61,66 @@ def main():
     '''
     # Upgrade `microdrop-launcher` package if there is a new version available.
     print 'Checking for `microdrop-launcher` updates',
-
-    # Check if new version of `microdrop-launcher` would be installed.
-    dry_run_response = json.loads(ch.conda_exec('install', '--dry-run',
-                                                '--json',
-                                                'microdrop-launcher',
-                                                verbose=False))
     try:
-        dry_run_unlinked, dry_run_linked = ch.install_info(dry_run_response)
+        # Check if new version of `microdrop-launcher` would be installed.
+        dry_run_response = json.loads(ch.conda_exec('install', '--dry-run',
+                                                    '--json',
+                                                    'microdrop-launcher',
+                                                    verbose=False))
     except RuntimeError, exception:
         if 'CondaHTTPError' in str(exception):
             print 'Error checking for updates - no network connection'
             return
         else:
             print 'Error checking for updates.\n{}'.format(exception)
-    else:
-        # Try to find package specifier for new version of
-        # `midrodrop-launcher`.
-        # **N.B.**, `dry_run_linked` will be `None` if there is no new version.
-        launcher_packages = [package_i for package_i, channel_i in
-                             (dry_run_linked or [])
-                             if 'microdrop-launcher' ==
-                             package_i.split('==')[0]]
-        if dry_run_linked and launcher_packages:
-            # A new version of the launcher is available for installation.
-            print 'Upgrading to:', launcher_packages[0]
+            return
+
+    # Get the list of packages that would be **uninstalled** (i.e., unlinked)
+    # and the list of packages that would be **installed** (i.e., linked).
+    dry_run_unlinked, dry_run_linked = ch.install_info(dry_run_response,
+                                                       split_version=True)
+
+    # Try to find package specifier for new version of `midrodrop-launcher`.
+    # **N.B.**, `dry_run_linked` will be `None` if there is no new version.
+    launcher_packages = [package_i for package_i, version_i, channel_i in
+                         (dry_run_linked or [])
+                         if 'microdrop-launcher' == package_i]
+    if dry_run_linked and launcher_packages:
+        # A new version of the launcher is available for installation.
+        print 'Upgrading to:', launcher_packages[0]
+        try:
             install_log_json = ch.conda_exec('install', '--json',
                                              'microdrop-launcher', '--quiet',
                                              verbose=False)
-            install_log_json = _strip_conda_menuinst_messages(install_log_json)
-            try:
-                install_response = json.loads(install_log_json)
-            except ValueError:
-                # Error decoding JSON response.
-                # XXX Assume install succeeded.
-                print ('Warning: could not decode `microdrop-launcher` install'
-                       ' log:')
-                print install_log_json
+        except RuntimeError, exception:
+            if 'CondaHTTPError' in str(exception):
+                print >> sys.stderr, ('Error upgrading `microdrop-launcher` - '
+                                      'no network connection.')
                 return
-            unlinked, linked = ch.install_info(install_response)
-            print 'Uninstall:'
-            print '\n'.join(' - `{} (from {})`'.format(package_i, channel_i)
-                            for package_i, channel_i in unlinked)
-            print ''
-            print 'Install:'
-            print '\n'.join(' - `{} (from {})`'.format(package_i, channel_i)
-                            for package_i, channel_i in linked)
-        else:
-            # No new version of the launcher is available for installation.
-            print ('Up to date: {}'
-                   .format(ch.package_version('microdrop-launcher',
-                                              verbose=False)
-                           .get('dist_name')))
+        install_log_json = _strip_conda_menuinst_messages(install_log_json)
+        install_log_json = _strip_progress_messages(install_log_json)
+        try:
+            install_response = json.loads(install_log_json)
+        except ValueError:
+            # Error decoding JSON response.
+            # XXX Assume install succeeded.
+            print >> sys.stderr, ('Warning: could not decode '
+                                  '`microdrop-launcher` install log:')
+            print >> sys.stderr, install_log_json
+            return
+        unlinked, linked = ch.install_info(install_response)
+        print 'Uninstall:'
+        print '\n'.join(' - `{} (from {})`'.format(package_i, channel_i)
+                        for package_i, channel_i in unlinked)
+        print ''
+        print 'Install:'
+        print '\n'.join(' - `{} (from {})`'.format(package_i, channel_i)
+                        for package_i, channel_i in linked)
+    else:
+        # No new version of the launcher is available for installation.
+        print ('Up to date: {}'.format(ch.package_version('microdrop-launcher',
+                                                          verbose=False)
+                                       .get('dist_name')))
 
 
 if __name__ == '__main__':
